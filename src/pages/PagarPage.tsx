@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,31 +15,44 @@ const PagarPage = () => {
   const [requestData, setRequestData] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<any>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   
-  // Obtener datos de la opción seleccionada del estado de navegación
+  // Obtener datos de la opción seleccionada del estado de navegación o URL params
   useEffect(() => {
     console.log("Location state:", location.state);
+    console.log("Search params:", Object.fromEntries(searchParams.entries()));
     
+    // Intentar cargar datos del estado de navegación
     const state = location.state as { 
       requestId?: string; 
       optionId?: string;
       optionTitle?: string;
     } | undefined;
     
-    if (state && state.requestId && state.optionId) {
-      // Simulamos cargar datos del localStorage (en una app real usaríamos la BD)
+    // O intentar cargar datos de los query params
+    const requestId = state?.requestId || searchParams.get('requestId');
+    const optionId = state?.optionId || searchParams.get('optionId');
+    
+    if (requestId && optionId) {
+      // Intentamos cargar datos de localStorage
       const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      const request = savedRequests.find((req: any) => req.id === state.requestId);
+      const request = savedRequests.find((req: any) => req.id === requestId);
       
-      if (request && request.selectedPlot === state.optionId) {
+      if (request && request.selectedPlot === optionId) {
+        // Encontrar el título de la opción seleccionada
+        const optionTitle = request.plotOptions?.find((opt: any) => opt.id === optionId)?.title || 
+                            state?.optionTitle || 
+                            searchParams.get('optionTitle') || 
+                            'Opción seleccionada';
+                            
         setRequestData({
           ...request,
-          optionTitle: state.optionTitle
+          optionTitle
         });
         setError(null);
       } else {
@@ -57,7 +71,7 @@ const PagarPage = () => {
         variant: "destructive",
       });
     }
-  }, [location, toast]);
+  }, [location, searchParams, toast]);
   
   const handlePayment = async () => {
     if (!requestData) {

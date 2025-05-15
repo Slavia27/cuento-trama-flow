@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Mail } from 'lucide-react';
 
 type StoryRequest = {
   id: string;
@@ -17,7 +17,7 @@ type StoryRequest = {
   storyTheme: string;
   specialInterests: string;
   additionalDetails?: string;
-  status: 'pending' | 'options_sent' | 'option_selected' | 'completed';
+  status: 'pending' | 'options_sent' | 'option_selected' | 'payment_created' | 'payment_pending' | 'completed';
   createdAt: string;
   plotOptions?: { id: string; title: string; description: string }[];
   selectedPlot?: string;
@@ -33,6 +33,7 @@ const AdminDashboard = () => {
   ]);
   const [isSending, setIsSending] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [isSendingPaymentLink, setIsSendingPaymentLink] = useState(false);
   const { toast } = useToast();
   
   // Cargar solicitudes de localStorage (simulando una base de datos)
@@ -173,6 +174,50 @@ const AdminDashboard = () => {
     }
   };
   
+  const handleSendPaymentLink = async () => {
+    if (!selectedRequest || !selectedRequest.selectedPlot) return;
+    
+    try {
+      setIsSendingPaymentLink(true);
+      
+      // Encontrar el título de la opción seleccionada
+      const selectedOption = selectedRequest.plotOptions?.find(opt => opt.id === selectedRequest.selectedPlot);
+      if (!selectedOption) {
+        throw new Error("No se encontró la opción seleccionada");
+      }
+      
+      // Enviar correo electrónico con enlace de pago
+      const { data, error } = await supabase.functions.invoke('send-payment-link', {
+        body: {
+          to: selectedRequest.email,
+          name: selectedRequest.name,
+          childName: selectedRequest.childName,
+          requestId: selectedRequest.id,
+          optionId: selectedRequest.selectedPlot,
+          optionTitle: selectedOption.title,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      toast({
+        title: "Enlace de pago enviado",
+        description: `Se ha enviado un enlace de pago para ${selectedRequest.childName} por correo electrónico.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error al enviar enlace de pago",
+        description: error.message || "No se pudo enviar el enlace de pago por correo electrónico.",
+        variant: "destructive",
+      });
+      console.error("Error sending payment link:", error);
+    } finally {
+      setIsSendingPaymentLink(false);
+    }
+  };
+  
   return (
     <div className="container py-10">
       <h2 className="text-3xl font-bold mb-8">Panel de Administración</h2>
@@ -187,6 +232,7 @@ const AdminDashboard = () => {
               <TabsList className="w-full mb-4">
                 <TabsTrigger value="pending" className="flex-1">Pendientes</TabsTrigger>
                 <TabsTrigger value="options_sent" className="flex-1">Opciones Enviadas</TabsTrigger>
+                <TabsTrigger value="option_selected" className="flex-1">Opción Seleccionada</TabsTrigger>
                 <TabsTrigger value="completed" className="flex-1">Completados</TabsTrigger>
               </TabsList>
               
@@ -236,6 +282,45 @@ const AdminDashboard = () => {
                 )}
               </TabsContent>
               
+              <TabsContent value="option_selected" className="space-y-2 max-h-[500px] overflow-y-auto">
+                {requests.filter(req => 
+                  req.status === 'option_selected' || 
+                  req.status === 'payment_created' || 
+                  req.status === 'payment_pending'
+                ).map(request => (
+                  <div
+                    key={request.id}
+                    className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
+                      selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
+                    }`}
+                    onClick={() => handleSelectRequest(request)}
+                  >
+                    <p className="font-medium">{request.name}</p>
+                    <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        request.status === 'option_selected' ? 'bg-amber-100 text-amber-700' :
+                        request.status === 'payment_created' ? 'bg-blue-100 text-blue-700' :
+                        'bg-purple-100 text-purple-700'
+                      }`}>
+                        {request.status === 'option_selected' ? 'Opción seleccionada' :
+                         request.status === 'payment_created' ? 'Pago creado' :
+                         'Pago pendiente'}
+                      </span>
+                      <span>{new Date(request.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+                
+                {requests.filter(req => 
+                  req.status === 'option_selected' || 
+                  req.status === 'payment_created' || 
+                  req.status === 'payment_pending'
+                ).length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">No hay solicitudes con opción seleccionada.</p>
+                )}
+              </TabsContent>
+              
               <TabsContent value="completed" className="space-y-2 max-h-[500px] overflow-y-auto">
                 {requests.filter(req => req.status === 'completed').map(request => (
                   <div
@@ -271,10 +356,16 @@ const AdminDashboard = () => {
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     selectedRequest.status === 'pending' ? 'bg-story-yellow/20 text-amber-700' :
                     selectedRequest.status === 'options_sent' ? 'bg-story-blue/20 text-blue-700' :
+                    selectedRequest.status === 'option_selected' ? 'bg-amber-100/20 text-amber-700' :
+                    selectedRequest.status === 'payment_pending' ? 'bg-purple-100/20 text-purple-700' :
+                    selectedRequest.status === 'payment_created' ? 'bg-blue-100/20 text-blue-700' :
                     'bg-story-mint/20 text-green-700'
                   }`}>
                     {selectedRequest.status === 'pending' ? 'Pendiente' :
                      selectedRequest.status === 'options_sent' ? 'Opciones Enviadas' :
+                     selectedRequest.status === 'option_selected' ? 'Opción Seleccionada' :
+                     selectedRequest.status === 'payment_pending' ? 'Pago Pendiente' :
+                     selectedRequest.status === 'payment_created' ? 'Pago Creado' :
                      'Completado'}
                   </span>
                 </div>
@@ -361,16 +452,34 @@ const AdminDashboard = () => {
                   <div className="mt-6">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-lg font-medium">Opciones de Trama Enviadas</h4>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleResendOptions}
-                        disabled={isResending}
-                        className="flex items-center gap-2"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        {isResending ? 'Reenviando...' : 'Reenviar Correo'}
-                      </Button>
+                      
+                      {(selectedRequest.status === 'options_sent' || selectedRequest.status === 'option_selected') && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleResendOptions}
+                          disabled={isResending}
+                          className="flex items-center gap-2"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          {isResending ? 'Reenviando...' : 'Reenviar Opciones'}
+                        </Button>
+                      )}
+
+                      {(selectedRequest.status === 'option_selected' || 
+                        selectedRequest.status === 'payment_created' || 
+                        selectedRequest.status === 'payment_pending') && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleSendPaymentLink}
+                          disabled={isSendingPaymentLink}
+                          className="flex items-center gap-2 ml-2"
+                        >
+                          <Mail className="w-4 h-4" />
+                          {isSendingPaymentLink ? 'Enviando...' : 'Enviar Enlace de Pago'}
+                        </Button>
+                      )}
                     </div>
                     
                     <div className="space-y-4">
