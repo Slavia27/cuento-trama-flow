@@ -8,7 +8,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Info } from 'lucide-react';
 
 const PagarPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +19,7 @@ const PagarPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<any>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
   
   // Obtener datos de la opción seleccionada del estado de navegación
   useEffect(() => {
@@ -71,9 +72,11 @@ const PagarPage = () => {
     
     setIsLoading(true);
     setPaymentError(null);
+    setProcessingStatus('Conectando con Mercado Pago...');
     
     try {
       // Llamar a nuestro edge function para crear el pago con Mercado Pago
+      setProcessingStatus('Creando preferencia de pago...');
       const { data, error: invokeError } = await supabase.functions.invoke('create-payment', {
         body: {
           requestId: requestData.id,
@@ -86,16 +89,20 @@ const PagarPage = () => {
       });
       
       if (invokeError) {
+        console.error("Edge function invoke error:", invokeError);
         throw new Error(invokeError.message || "Error al invocar la función de pago");
       }
       
       console.log("Payment response:", data);
       
       if (!data || !data.success) {
+        console.error("Unsuccessful payment response:", data);
         throw new Error(data?.error || "Respuesta de pago inválida");
       }
       
       if (data.data && data.data.init_point) {
+        setProcessingStatus('Redirigiendo al checkout de Mercado Pago...');
+        
         // Guardamos el estado de la solicitud
         const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
         const updatedRequests = savedRequests.map((req: any) => {
@@ -111,22 +118,39 @@ const PagarPage = () => {
         
         localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
         
-        // Redirigir a la página de pago de Mercado Pago
-        console.log("Redirecting to Mercado Pago:", data.data.init_point);
-        window.location.href = data.data.init_point;
+        // Set payment URL and redirect after a brief delay
+        setPaymentUrl(data.data.init_point);
+        setTimeout(() => {
+          // Redirigir a la página de pago de Mercado Pago
+          console.log("Redirecting to Mercado Pago:", data.data.init_point);
+          window.location.href = data.data.init_point;
+        }, 500);
       } else {
         throw new Error("No se pudo obtener la URL de pago");
       }
     } catch (err: any) {
       console.error("Error creating payment:", err);
       
-      // Captura más detalles del error si está disponible
+      setPaymentError(err);
+      
+      // Extract error details from Supabase response if available
       if (err.response) {
-        setPaymentError({
-          status: err.response.status,
-          data: err.response.data
-        });
-      } else {
+        try {
+          const responseData = await err.response.json();
+          setPaymentError({
+            message: err.message,
+            status: err.response.status,
+            data: responseData
+          });
+        } catch (e) {
+          setPaymentError({
+            message: err.message,
+            status: err.response?.status,
+            text: await err.response?.text()
+          });
+        }
+      } else if (typeof err === 'object' && err !== null) {
+        // Handle error from edge function
         setPaymentError(err);
       }
       
@@ -137,6 +161,7 @@ const PagarPage = () => {
         variant: "destructive",
       });
       setIsLoading(false);
+      setProcessingStatus('');
     }
   };
   
@@ -201,6 +226,14 @@ const PagarPage = () => {
                   </pre>
                 </details>
               )}
+              {paymentError.data && (
+                <details className="mt-2">
+                  <summary>Datos adicionales</summary>
+                  <pre className="text-xs mt-2 p-2 bg-black/10 rounded overflow-x-auto">
+                    {JSON.stringify(paymentError.data, null, 2)}
+                  </pre>
+                </details>
+              )}
             </AlertDescription>
           </Alert>
         )}
@@ -244,6 +277,14 @@ const PagarPage = () => {
                 <div className="bg-muted p-4 rounded-md mb-4">
                   <p className="text-sm">Al hacer clic en "Pagar ahora", serás redirigido a Mercado Pago para completar tu compra de forma segura.</p>
                 </div>
+                
+                {processingStatus && (
+                  <Alert className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Procesando</AlertTitle>
+                    <AlertDescription>{processingStatus}</AlertDescription>
+                  </Alert>
+                )}
                 
                 <Button 
                   className="w-full bg-story-mint hover:bg-story-mint/80 text-black font-bold py-3"

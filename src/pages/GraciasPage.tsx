@@ -37,6 +37,7 @@ const GraciasPage = () => {
               status: paymentStatus === 'approved' ? 'completed' : 'payment_' + paymentStatus,
               paymentStatus,
               paymentId,
+              paymentTimestamp: new Date().toISOString(),
             };
           }
           return req;
@@ -86,6 +87,7 @@ const GraciasPage = () => {
   const paymentStatus = getPaymentStatus();
   const isProcessingPayment = paymentStatus === 'pending' || paymentStatus === 'in_process';
   const isPaymentSuccessful = paymentStatus === 'approved';
+  const isPaymentRejected = paymentStatus === 'rejected';
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -131,7 +133,7 @@ const GraciasPage = () => {
                 </p>
               )}
             </>
-          ) : paymentStatus === 'rejected' ? (
+          ) : isPaymentRejected ? (
             <>
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <AlertCircle className="h-8 w-8 text-red-500" />

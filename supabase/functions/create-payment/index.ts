@@ -21,7 +21,16 @@ serve(async (req: Request) => {
     // Get access token from environment variables
     const mercadoPagoAccessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN')
     if (!mercadoPagoAccessToken) {
-      throw new Error('Missing Mercado Pago access token')
+      console.error('Missing Mercado Pago access token')
+      return new Response(
+        JSON.stringify({
+          error: 'Missing Mercado Pago access token. Please set the MERCADO_PAGO_ACCESS_TOKEN secret.',
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     // Parse request body
@@ -31,6 +40,7 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({
           error: 'Missing required parameters',
+          received: { requestId, amount, description, customerEmail, customerName, redirectUrl },
         }),
         {
           status: 400,
@@ -40,6 +50,33 @@ serve(async (req: Request) => {
     }
 
     console.log(`Creating payment for request ${requestId}, amount: ${amount}, customer: ${customerEmail}`)
+    console.log(`Redirect URL: ${redirectUrl}`)
+    
+    // Test connection to Mercado Pago API first to validate the token
+    const testResponse = await fetch(`${MP_API_URL}/checkout/preferences/search?limit=1`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${mercadoPagoAccessToken}`,
+      },
+    }).catch(err => {
+      console.error('Error testing Mercado Pago connection:', err)
+      return { ok: false, status: 500, statusText: err.message }
+    })
+    
+    if (!testResponse.ok) {
+      console.error('Token validation failed:', testResponse.status, testResponse.statusText)
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid Mercado Pago access token or API connection error',
+          status: testResponse.status,
+          details: testResponse.statusText,
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
 
     // Create preference in Mercado Pago with more detailed configuration
     const response = await fetch(`${MP_API_URL}/checkout/preferences`, {
@@ -80,19 +117,29 @@ serve(async (req: Request) => {
           default_installments: 1
         },
         expires: false,
-        notification_url: '',
       }),
+    }).catch(err => {
+      console.error('Error communicating with Mercado Pago API:', err)
+      return { ok: false, status: 500, statusText: err.message }
     })
 
-    const result = await response.json()
-
+    // Handle request error
     if (!response.ok) {
-      console.error('Error creating payment:', JSON.stringify(result))
+      const errorBody = await response.text()
+      console.error(`Error from Mercado Pago API (${response.status}):`, errorBody)
+      
+      let parsedError
+      try {
+        parsedError = JSON.parse(errorBody)
+      } catch (e) {
+        parsedError = { raw: errorBody }
+      }
+      
       return new Response(
         JSON.stringify({
-          error: 'Failed to create payment',
-          details: result,
+          error: 'Failed to create payment in Mercado Pago',
           status: response.status,
+          details: parsedError
         }),
         {
           status: response.status,
@@ -100,6 +147,8 @@ serve(async (req: Request) => {
         }
       )
     }
+
+    const result = await response.json()
 
     console.log('Payment preference created successfully:', JSON.stringify({
       id: result.id,
@@ -121,7 +170,9 @@ serve(async (req: Request) => {
     
     return new Response(
       JSON.stringify({
-        error: error.message,
+        error: 'Internal server error',
+        message: error.message,
+        stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
       }),
       {
         status: 500,
