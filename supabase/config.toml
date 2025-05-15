@@ -3,3 +3,6 @@ project_id = "lvzfnctjyfwefxvyldjr"
 
 [functions.send-plot-options]
 verify_jwt = false
+
+[functions.create-payment]
+verify_jwt = false

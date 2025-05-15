@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 // Simulación de un formulario de pago simple
 const PagarPage = () => {
@@ -16,6 +18,7 @@ const PagarPage = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   
   // Obtener datos de la opción seleccionada del estado de navegación
   useEffect(() => {
@@ -56,7 +59,7 @@ const PagarPage = () => {
     }
   }, [location, toast]);
   
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!requestData) {
       toast({
         title: "Error",
@@ -66,6 +69,62 @@ const PagarPage = () => {
       return;
     }
     
+    setIsLoading(true);
+    
+    try {
+      // Llamar a nuestro edge function para crear el pago con Mercado Pago
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          requestId: requestData.id,
+          amount: 23788, // Monto en pesos chilenos (sin puntos ni comas)
+          description: `Cuento personalizado para ${requestData.childName}`,
+          customerEmail: requestData.email || 'cliente@ejemplo.com', // Usamos email del cliente o un valor por defecto
+          customerName: requestData.name || 'Cliente', // Usamos nombre del cliente o un valor por defecto
+          redirectUrl: `${window.location.origin}/gracias`,
+        },
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      console.log("Payment response:", data);
+      
+      if (data && data.success && data.data && data.data.init_point) {
+        // Guardamos el estado de la solicitud
+        const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
+        const updatedRequests = savedRequests.map((req: any) => {
+          if (req.id === requestData.id) {
+            return {
+              ...req,
+              status: 'payment_created',
+              paymentId: data.data.id,
+            };
+          }
+          return req;
+        });
+        
+        localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
+        
+        // Redirigir a la página de pago de Mercado Pago
+        window.location.href = data.data.init_point;
+      } else {
+        throw new Error("No se pudo obtener la URL de pago");
+      }
+    } catch (err: any) {
+      console.error("Error creating payment:", err);
+      setError(err.message || "Hubo un error al procesar el pago. Por favor intente nuevamente.");
+      toast({
+        title: "Error de pago",
+        description: err.message || "Hubo un error al procesar el pago. Por favor intente nuevamente.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
+  
+  const handleManualPaymentSuccess = () => {
+    // Esta función simula un pago exitoso para pruebas
     setIsLoading(true);
     
     // Simulamos un proceso de pago
@@ -145,8 +204,8 @@ const PagarPage = () => {
               <h2 className="text-xl font-medium mb-4">Información de pago</h2>
               
               <div className="space-y-4">
-                <div className="bg-muted p-4 rounded-md">
-                  <p className="text-sm">Esta es una demostración. En una aplicación real, aquí se integraría un procesador de pagos como Stripe, PayPal, WebPay, etc.</p>
+                <div className="bg-muted p-4 rounded-md mb-4">
+                  <p className="text-sm">Al hacer clic en "Pagar ahora", serás redirigido a Mercado Pago para completar tu compra de forma segura.</p>
                 </div>
                 
                 <Button 
@@ -154,7 +213,24 @@ const PagarPage = () => {
                   onClick={handlePayment}
                   disabled={isLoading || !requestData}
                 >
-                  {isLoading ? "Procesando..." : "Pagar ahora"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    "Pagar ahora"
+                  )}
+                </Button>
+                
+                {/* Botón alternativo para pruebas - se puede eliminar en producción */}
+                <Button 
+                  variant="outline"
+                  className="w-full mt-2 border-dashed border-muted-foreground/50 text-muted-foreground"
+                  onClick={handleManualPaymentSuccess}
+                  disabled={isLoading || !requestData}
+                >
+                  Simular pago exitoso (solo para pruebas)
                 </Button>
               </div>
             </Card>
