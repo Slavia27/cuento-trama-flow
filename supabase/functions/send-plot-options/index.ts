@@ -48,7 +48,7 @@ serve(async (req) => {
     const selectionUrl = `${req.headers.get("origin") || "https://tu-sitio-web.com"}/opciones/${requestId}`;
     
     const emailResponse = await resend.emails.send({
-      from: "Cuentos Personalizados <onboarding@resend.dev>",
+      from: "Cuentos Personalizados <notificaciones@rasti.cl>", // Updated to use your verified domain
       to: [to],
       subject: `Opciones de trama para el cuento de ${childName}`,
       html: `
