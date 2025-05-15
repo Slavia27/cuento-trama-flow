@@ -34,7 +34,7 @@ const AdminDashboard = () => {
   // Cargar solicitudes de localStorage (simulando una base de datos)
   useEffect(() => {
     const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-    setRequests(savedRequests);
+    setRequests(savedRequests as StoryRequest[]);
   }, []);
   
   // Guardar solicitudes en localStorage cuando se actualizan
@@ -78,7 +78,7 @@ const AdminDashboard = () => {
       if (req.id === selectedRequest.id) {
         return {
           ...req,
-          status: 'options_sent',
+          status: 'options_sent' as const,
           plotOptions: plotOptions.map((opt, idx) => ({
             id: `opt-${idx + 1}`,
             title: opt.title,
@@ -92,7 +92,7 @@ const AdminDashboard = () => {
     setRequests(updatedRequests);
     setSelectedRequest(prev => prev ? {
       ...prev,
-      status: 'options_sent',
+      status: 'options_sent' as const,
       plotOptions: plotOptions.map((opt, idx) => ({
         id: `opt-${idx + 1}`,
         title: opt.title,
