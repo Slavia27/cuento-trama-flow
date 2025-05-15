@@ -37,22 +37,23 @@ const PagarPage = () => {
     // O intentar cargar datos de los query params
     const requestId = state?.requestId || searchParams.get('requestId');
     const optionId = state?.optionId || searchParams.get('optionId');
+    const optionTitle = state?.optionTitle || searchParams.get('optionTitle');
     
     if (requestId && optionId) {
       // Intentamos cargar datos de localStorage
       const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
       const request = savedRequests.find((req: any) => req.id === requestId);
       
-      if (request && request.selectedPlot === optionId) {
-        // Encontrar el título de la opción seleccionada
-        const optionTitle = request.plotOptions?.find((opt: any) => opt.id === optionId)?.title || 
-                            state?.optionTitle || 
-                            searchParams.get('optionTitle') || 
-                            'Opción seleccionada';
+      if (request) {
+        // Encontrar el título de la opción seleccionada si no se proporcionó
+        const foundOptionTitle = optionTitle || 
+                      request.plotOptions?.find((opt: any) => opt.id === optionId)?.title || 
+                      'Opción seleccionada';
                             
         setRequestData({
           ...request,
-          optionTitle
+          selectedPlot: optionId, // Asegúrate que selectedPlot esté establecido con optionId
+          optionTitle: foundOptionTitle
         });
         setError(null);
       } else {

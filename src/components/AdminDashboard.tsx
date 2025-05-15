@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -229,11 +228,11 @@ const AdminDashboard = () => {
             <h3 className="text-xl font-bold mb-4">Solicitudes</h3>
             
             <Tabs defaultValue="pending">
-              <TabsList className="w-full mb-4">
-                <TabsTrigger value="pending" className="flex-1">Pendientes</TabsTrigger>
-                <TabsTrigger value="options_sent" className="flex-1">Opciones Enviadas</TabsTrigger>
-                <TabsTrigger value="option_selected" className="flex-1">Opción Seleccionada</TabsTrigger>
-                <TabsTrigger value="completed" className="flex-1">Completados</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 mb-4">
+                <TabsTrigger value="pending">Pendientes</TabsTrigger>
+                <TabsTrigger value="options_sent">Opciones</TabsTrigger>
+                <TabsTrigger value="option_selected">Selección</TabsTrigger>
+                <TabsTrigger value="completed">Completados</TabsTrigger>
               </TabsList>
               
               <TabsContent value="pending" className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -348,7 +347,7 @@ const AdminDashboard = () => {
         
         {/* Detalles de la solicitud */}
         <div className="lg:col-span-8">
-          <Card className="p-6 h-full">
+          <Card className="p-6 h-full overflow-y-auto">
             {selectedRequest ? (
               <>
                 <div className="flex items-center justify-between mb-6">

@@ -31,9 +31,9 @@ serve(async (req) => {
       throw new Error("Missing required parameters");
     }
     
-    // Construir URL de pago
+    // Construir URL de pago con todos los parámetros necesarios como query params
     const origin = req.headers.get("origin") || "https://tu-sitio-web.com";
-    const paymentUrl = `${origin}/pagar`;
+    const paymentUrl = `${origin}/pagar?requestId=${requestId}&optionId=${optionId}&optionTitle=${encodeURIComponent(optionTitle)}`;
     
     const emailResponse = await resend.emails.send({
       from: "Cuentos Personalizados <notificaciones@rasti.cl>", 
