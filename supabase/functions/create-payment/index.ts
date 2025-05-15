@@ -108,6 +108,7 @@ serve(async (req: Request) => {
       },
       auto_return: 'approved',
       statement_descriptor: 'Cuentos Personalizados',
+      notification_url: null, // Para recibir notificaciones, puedes configurar un webhook aquí
       payment_methods: {
         excluded_payment_types: [],
         default_payment_method_id: null,
@@ -121,6 +122,9 @@ serve(async (req: Request) => {
     console.log("Mercado Pago payload:", JSON.stringify(mpPayload, null, 2));
     
     // Make request to Mercado Pago API
+    console.log("Sending request to Mercado Pago API...");
+    console.log(`Authorization: Bearer ${mercadoPagoAccessToken.substring(0, 10)}...`);
+    
     const response = await fetch(`${MP_API_URL}/checkout/preferences`, {
       method: 'POST',
       headers: {
