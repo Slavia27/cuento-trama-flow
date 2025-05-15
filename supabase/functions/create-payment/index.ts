@@ -20,6 +20,8 @@ serve(async (req: Request) => {
   try {
     // Get access token from environment variables
     const mercadoPagoAccessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN')
+    console.log("Starting payment creation process");
+
     if (!mercadoPagoAccessToken) {
       console.error('Missing Mercado Pago access token')
       return new Response(
@@ -34,7 +36,28 @@ serve(async (req: Request) => {
     }
 
     // Parse request body
-    const { requestId, amount, description, customerEmail, customerName, redirectUrl } = await req.json()
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const { 
+      requestId, 
+      amount, 
+      description, 
+      customerEmail, 
+      customerName, 
+      redirectUrl 
+    } = requestData;
 
     if (!requestId || !amount || !description || !customerEmail || !customerName || !redirectUrl) {
       return new Response(
@@ -49,36 +72,11 @@ serve(async (req: Request) => {
       )
     }
 
-    console.log(`Creating payment for request ${requestId}, amount: ${amount}, customer: ${customerEmail}`)
-    console.log(`Redirect URL: ${redirectUrl}`)
-    
-    // Test connection to Mercado Pago API first to validate the token
-    const testResponse = await fetch(`${MP_API_URL}/checkout/preferences/search?limit=1`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${mercadoPagoAccessToken}`,
-      },
-    }).catch(err => {
-      console.error('Error testing Mercado Pago connection:', err)
-      return { ok: false, status: 500, statusText: err.message }
-    })
-    
-    if (!testResponse.ok) {
-      console.error('Token validation failed:', testResponse.status, testResponse.statusText)
-      return new Response(
-        JSON.stringify({
-          error: 'Invalid Mercado Pago access token or API connection error',
-          status: testResponse.status,
-          details: testResponse.statusText,
-        }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
+    console.log(`Creating payment for request ${requestId}, amount: ${amount}, customer: ${customerEmail}`);
+    console.log(`Redirect URL: ${redirectUrl}`);
 
-    // Create preference in Mercado Pago with more detailed configuration
+    // Create preference in Mercado Pago
+    console.log("Creating Mercado Pago preference...");
     const response = await fetch(`${MP_API_URL}/checkout/preferences`, {
       method: 'POST',
       headers: {
@@ -119,20 +117,20 @@ serve(async (req: Request) => {
         expires: false,
       }),
     }).catch(err => {
-      console.error('Error communicating with Mercado Pago API:', err)
-      return { ok: false, status: 500, statusText: err.message }
-    })
+      console.error('Error communicating with Mercado Pago API:', err);
+      return { ok: false, status: 500, statusText: err.message };
+    });
 
     // Handle request error
     if (!response.ok) {
-      const errorBody = await response.text()
-      console.error(`Error from Mercado Pago API (${response.status}):`, errorBody)
+      const errorText = await response.text();
+      console.error(`Error from Mercado Pago API (${response.status}):`, errorText);
       
-      let parsedError
+      let parsedError;
       try {
-        parsedError = JSON.parse(errorBody)
+        parsedError = JSON.parse(errorText);
       } catch (e) {
-        parsedError = { raw: errorBody }
+        parsedError = { raw: errorText };
       }
       
       return new Response(
@@ -145,15 +143,15 @@ serve(async (req: Request) => {
           status: response.status,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      )
+      );
     }
 
-    const result = await response.json()
+    const result = await response.json();
 
     console.log('Payment preference created successfully:', JSON.stringify({
       id: result.id,
       init_point: result.init_point,
-    }))
+    }));
 
     return new Response(
       JSON.stringify({
@@ -164,20 +162,20 @@ serve(async (req: Request) => {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    )
+    );
   } catch (error) {
-    console.error('Error processing payment:', error)
+    console.error('Error processing payment:', error);
     
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
         message: error.message,
-        stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
+        stack: Deno.env.get('ENVIRONMENT') === 'development' ? error.stack : undefined,
       }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    )
+    );
   }
-})
+});
