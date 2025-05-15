@@ -36,10 +36,6 @@ serve(async (req) => {
       throw new Error("Missing required parameters");
     }
     
-    // Verificar el email del destinatario
-    const authorizedRecipient = "contacto@rasti.cl"; // Tu correo verificado
-    const recipientEmail = to === authorizedRecipient ? to : authorizedRecipient;
-    
     // Generar el HTML para las opciones de trama
     const optionsHTML = plotOptions.map((option, index) => `
       <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9;">
@@ -50,14 +46,11 @@ serve(async (req) => {
 
     // Construir URL de selección
     const selectionUrl = `${req.headers.get("origin") || "https://tu-sitio-web.com"}/opciones/${requestId}`;
-
-    // Si el destinatario no es el autorizado, incluir información en el asunto
-    const subjectPrefix = to !== authorizedRecipient ? `[Destinatario original: ${to}] ` : "";
     
     const emailResponse = await resend.emails.send({
       from: "Cuentos Personalizados <onboarding@resend.dev>",
-      to: [recipientEmail],
-      subject: `${subjectPrefix}Opciones de trama para el cuento de ${childName}`,
+      to: [to],
+      subject: `Opciones de trama para el cuento de ${childName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #3b82f6; padding: 20px; text-align: center; color: white;">
@@ -65,7 +58,6 @@ serve(async (req) => {
           </div>
           
           <div style="padding: 20px;">
-            ${to !== recipientEmail ? `<p><strong>Nota:</strong> Este correo estaba destinado originalmente a: ${to}</p>` : ''}
             <p>Hola ${name},</p>
             
             <p>¡Gracias por confiar en nosotros para crear un cuento personalizado para ${childName}!</p>

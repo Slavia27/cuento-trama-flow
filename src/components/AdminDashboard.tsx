@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { RefreshCw } from 'lucide-react';
 
 type StoryRequest = {
   id: string;
@@ -30,6 +32,7 @@ const AdminDashboard = () => {
     { title: '', description: '' },
   ]);
   const [isSending, setIsSending] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const { toast } = useToast();
   
   // Cargar solicitudes de localStorage (simulando una base de datos)
@@ -130,6 +133,43 @@ const AdminDashboard = () => {
       console.error("Error sending plot options:", error);
     } finally {
       setIsSending(false);
+    }
+  };
+  
+  const handleResendOptions = async () => {
+    if (!selectedRequest || !selectedRequest.plotOptions) return;
+    
+    try {
+      setIsResending(true);
+      
+      // Enviar correo electrónico usando la función edge
+      const { data, error } = await supabase.functions.invoke('send-plot-options', {
+        body: {
+          to: selectedRequest.email,
+          name: selectedRequest.name,
+          childName: selectedRequest.childName,
+          requestId: selectedRequest.id,
+          plotOptions: selectedRequest.plotOptions,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      toast({
+        title: "Correo reenviado",
+        description: `Se han reenviado las opciones de trama para ${selectedRequest.childName} por correo electrónico.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error al reenviar opciones",
+        description: error.message || "No se pudieron reenviar las opciones por correo electrónico.",
+        variant: "destructive",
+      });
+      console.error("Error resending plot options:", error);
+    } finally {
+      setIsResending(false);
     }
   };
   
@@ -309,8 +349,9 @@ const AdminDashboard = () => {
                     <Button 
                       className="mt-4 w-full bg-story-blue hover:bg-story-blue/80"
                       onClick={handleSendOptions}
+                      disabled={isSending}
                     >
-                      Enviar Opciones al Cliente
+                      {isSending ? 'Enviando...' : 'Enviar Opciones al Cliente'}
                     </Button>
                   </div>
                 )}
@@ -318,7 +359,19 @@ const AdminDashboard = () => {
                 {/* Vista de opciones enviadas */}
                 {selectedRequest.status !== 'pending' && selectedRequest.plotOptions && (
                   <div className="mt-6">
-                    <h4 className="text-lg font-medium mb-4">Opciones de Trama Enviadas</h4>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-medium">Opciones de Trama Enviadas</h4>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleResendOptions}
+                        disabled={isResending}
+                        className="flex items-center gap-2"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        {isResending ? 'Reenviando...' : 'Reenviar Correo'}
+                      </Button>
+                    </div>
                     
                     <div className="space-y-4">
                       {selectedRequest.plotOptions.map((option, index) => (
