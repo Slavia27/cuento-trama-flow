@@ -1,72 +1,120 @@
 
 import React from 'react';
-import { useLocation, Navigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 
 const PagarPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const { requestId, selectedOption, optionTitle } = location.state || {};
   
-  // Si no hay datos de selección, redirigir a la página principal
-  if (!requestId || !selectedOption) {
-    return <Navigate to="/" />;
-  }
-  
-  const handleWixRedirect = () => {
-    // En una implementación real, aquí redirigirías a la tienda de WIX
-    // con los parámetros necesarios para identificar el producto y la opción seleccionada
-    window.open('https://tutiendawix.com/producto/cuento-personalizado', '_blank');
+  const handlePayment = () => {
+    // Aquí se implementaría la integración con un gateway de pago
+    // Por ahora, simularemos que el pago fue exitoso
+    
+    const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
+    const updatedRequests = savedRequests.map((req: any) => {
+      if (req.id === requestId) {
+        return {
+          ...req,
+          status: 'completed',
+        };
+      }
+      return req;
+    });
+    
+    localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
+    
+    toast({
+      title: "¡Pago exitoso!",
+      description: "Tu pago ha sido procesado. Pronto comenzaremos a trabajar en tu cuento personalizado.",
+    });
+    
+    // Redirigir a una página de gracias
+    navigate('/gracias');
   };
+  
+  if (!requestId || !selectedOption) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        
+        <main className="flex-grow container py-12 text-center">
+          <h1 className="text-3xl font-bold mb-6">Información no disponible</h1>
+          <p className="mb-6">No se encontró información sobre tu solicitud.</p>
+          <Button onClick={() => navigate('/')}>Volver al inicio</Button>
+        </main>
+        
+        <Footer />
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-grow container py-12">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold text-center mb-8">Finalizar tu Pedido</h1>
+      <main className="flex-grow container py-12 max-w-3xl">
+        <h1 className="text-3xl font-bold text-center mb-8">Finalizar tu Pedido</h1>
+        
+        <Card className="p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">Resumen de tu pedido</h2>
           
-          <Card className="p-8 mb-8">
-            <h2 className="text-xl font-bold mb-4">Resumen de tu Selección</h2>
-            
-            <div className="border-t border-b py-4 mb-4">
-              <div className="flex justify-between mb-2">
-                <span className="text-muted-foreground">Producto:</span>
-                <span className="font-medium">Cuento Personalizado</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-muted-foreground">Opción seleccionada:</span>
-                <span className="font-medium">{optionTitle}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ID de solicitud:</span>
-                <span className="font-medium">{requestId}</span>
-              </div>
+          <div className="space-y-4">
+            <div className="flex justify-between border-b pb-2">
+              <span>Opción seleccionada:</span>
+              <span className="font-medium">{optionTitle}</span>
             </div>
             
-            <p className="text-center mb-6">
-              Para finalizar tu pedido, serás redirigido a nuestra tienda en WIX donde podrás realizar el pago
-              y completar tu información de envío si es necesario.
-            </p>
-            
-            <div className="flex justify-center">
-              <Button className="bg-story-blue hover:bg-story-blue/80 w-full md:w-auto" onClick={handleWixRedirect}>
-                Ir a WIX para Pagar
-              </Button>
+            <div className="flex justify-between border-b pb-2">
+              <span>Servicio:</span>
+              <span className="font-medium">Cuento personalizado</span>
             </div>
-          </Card>
-          
-          <div className="text-center">
-            <p className="text-muted-foreground mb-3">
-              ¿Tienes preguntas antes de completar el pago?
-            </p>
-            <Link to="/como-funciona" className="text-primary hover:underline">
-              Consulta nuestra sección de preguntas frecuentes
-            </Link>
+            
+            <div className="flex justify-between border-b pb-2">
+              <span>Precio:</span>
+              <span className="font-medium">$49.99</span>
+            </div>
+            
+            <div className="flex justify-between text-lg font-bold">
+              <span>Total:</span>
+              <span>$49.99</span>
+            </div>
           </div>
+        </Card>
+        
+        <Card className="p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">Método de pago</h2>
+          
+          <p className="mb-6 text-muted-foreground">
+            En una implementación real, aquí se integraría un formulario de pago con tarjeta
+            o botones para diferentes métodos de pago como PayPal, Stripe, etc.
+          </p>
+          
+          <div className="flex gap-4 mb-6">
+            <div className="border rounded-md p-3 flex-1 text-center cursor-pointer hover:bg-muted/50">
+              <p className="font-medium">Tarjeta de crédito</p>
+            </div>
+            <div className="border rounded-md p-3 flex-1 text-center cursor-pointer hover:bg-muted/50">
+              <p className="font-medium">PayPal</p>
+            </div>
+          </div>
+        </Card>
+        
+        <div className="text-center">
+          <Button 
+            size="lg" 
+            className="bg-story-blue hover:bg-story-blue/80 px-8"
+            onClick={handlePayment}
+          >
+            Pagar ahora
+          </Button>
         </div>
       </main>
       

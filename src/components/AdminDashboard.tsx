@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 type StoryRequest = {
   id: string;
@@ -29,6 +29,7 @@ const AdminDashboard = () => {
     { title: '', description: '' },
     { title: '', description: '' },
   ]);
+  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
   
   // Cargar solicitudes de localStorage (simulando una base de datos)
@@ -59,7 +60,7 @@ const AdminDashboard = () => {
     setPlotOptions(newOptions);
   };
   
-  const handleSendOptions = () => {
+  const handleSendOptions = async () => {
     // Validar que todas las opciones tengan título y descripción
     if (plotOptions.some(opt => !opt.title || !opt.description)) {
       toast({
@@ -72,38 +73,64 @@ const AdminDashboard = () => {
     
     if (!selectedRequest) return;
     
-    // En una implementación real, aquí enviarías un correo al cliente con las opciones
-    // Por ahora, solo actualizamos el estado
-    const updatedRequests = requests.map(req => {
-      if (req.id === selectedRequest.id) {
-        return {
-          ...req,
-          status: 'options_sent' as const,
-          plotOptions: plotOptions.map((opt, idx) => ({
-            id: `opt-${idx + 1}`,
-            title: opt.title,
-            description: opt.description,
-          })),
-        };
-      }
-      return req;
-    });
-    
-    setRequests(updatedRequests);
-    setSelectedRequest(prev => prev ? {
-      ...prev,
-      status: 'options_sent' as const,
-      plotOptions: plotOptions.map((opt, idx) => ({
+    try {
+      setIsSending(true);
+
+      // Preparar las opciones de trama para enviar por correo
+      const optionsWithIds = plotOptions.map((opt, idx) => ({
         id: `opt-${idx + 1}`,
         title: opt.title,
         description: opt.description,
-      })),
-    } : null);
-    
-    toast({
-      title: "Opciones enviadas",
-      description: `Se han enviado las opciones de trama para ${selectedRequest.childName}.`,
-    });
+      }));
+      
+      // Enviar correo electrónico usando la función edge
+      const { data, error } = await supabase.functions.invoke('send-plot-options', {
+        body: {
+          to: selectedRequest.email,
+          name: selectedRequest.name,
+          childName: selectedRequest.childName,
+          requestId: selectedRequest.id,
+          plotOptions: optionsWithIds,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Actualizar el estado de la solicitud
+      const updatedRequests = requests.map(req => {
+        if (req.id === selectedRequest.id) {
+          return {
+            ...req,
+            status: 'options_sent' as const,
+            plotOptions: optionsWithIds,
+          };
+        }
+        return req;
+      });
+      
+      setRequests(updatedRequests);
+      setSelectedRequest(prev => prev ? {
+        ...prev,
+        status: 'options_sent' as const,
+        plotOptions: optionsWithIds,
+      } : null);
+      
+      toast({
+        title: "Opciones enviadas",
+        description: `Se han enviado las opciones de trama para ${selectedRequest.childName} por correo electrónico.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error al enviar opciones",
+        description: error.message || "No se pudieron enviar las opciones por correo electrónico.",
+        variant: "destructive",
+      });
+      console.error("Error sending plot options:", error);
+    } finally {
+      setIsSending(false);
+    }
   };
   
   return (

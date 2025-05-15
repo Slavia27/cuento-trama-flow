@@ -1,1 +1,5 @@
+
 project_id = "lvzfnctjyfwefxvyldjr"
+
+[functions.send-plot-options]
+verify_jwt = false

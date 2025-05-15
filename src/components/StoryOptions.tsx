@@ -34,8 +34,11 @@ const StoryOptions = () => {
       const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
       const foundRequest = savedRequests.find((req: StoryRequest) => req.id === requestId);
       
-      if (foundRequest && foundRequest.status === 'options_sent') {
+      if (foundRequest && (foundRequest.status === 'options_sent' || foundRequest.status === 'option_selected')) {
         setRequest(foundRequest);
+        if (foundRequest.selectedPlot) {
+          setSelectedOption(foundRequest.selectedPlot);
+        }
       } else {
         // Si no se encuentra o no tiene opciones, redireccionar
         navigate('/');
@@ -82,6 +85,11 @@ const StoryOptions = () => {
     });
     
     localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
+    
+    toast({
+      title: "¡Selección guardada!",
+      description: "Tu selección ha sido guardada. A continuación, podrás realizar el pago para continuar.",
+    });
     
     // Simular redirección a WIX para pago
     navigate('/pagar', { 
