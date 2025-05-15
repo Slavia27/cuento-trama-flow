@@ -8,9 +8,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
-// Simulación de un formulario de pago simple
 const PagarPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [requestData, setRequestData] = useState<any>(null);
@@ -18,6 +17,7 @@ const PagarPage = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<any>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   
   // Obtener datos de la opción seleccionada del estado de navegación
@@ -70,10 +70,11 @@ const PagarPage = () => {
     }
     
     setIsLoading(true);
+    setPaymentError(null);
     
     try {
       // Llamar a nuestro edge function para crear el pago con Mercado Pago
-      const { data, error } = await supabase.functions.invoke('create-payment', {
+      const { data, error: invokeError } = await supabase.functions.invoke('create-payment', {
         body: {
           requestId: requestData.id,
           amount: 23788, // Monto en pesos chilenos (sin puntos ni comas)
@@ -84,13 +85,17 @@ const PagarPage = () => {
         },
       });
       
-      if (error) {
-        throw new Error(error.message);
+      if (invokeError) {
+        throw new Error(invokeError.message || "Error al invocar la función de pago");
       }
       
       console.log("Payment response:", data);
       
-      if (data && data.success && data.data && data.data.init_point) {
+      if (!data || !data.success) {
+        throw new Error(data?.error || "Respuesta de pago inválida");
+      }
+      
+      if (data.data && data.data.init_point) {
         // Guardamos el estado de la solicitud
         const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
         const updatedRequests = savedRequests.map((req: any) => {
@@ -107,12 +112,24 @@ const PagarPage = () => {
         localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
         
         // Redirigir a la página de pago de Mercado Pago
+        console.log("Redirecting to Mercado Pago:", data.data.init_point);
         window.location.href = data.data.init_point;
       } else {
         throw new Error("No se pudo obtener la URL de pago");
       }
     } catch (err: any) {
       console.error("Error creating payment:", err);
+      
+      // Captura más detalles del error si está disponible
+      if (err.response) {
+        setPaymentError({
+          status: err.response.status,
+          data: err.response.data
+        });
+      } else {
+        setPaymentError(err);
+      }
+      
       setError(err.message || "Hubo un error al procesar el pago. Por favor intente nuevamente.");
       toast({
         title: "Error de pago",
@@ -163,8 +180,28 @@ const PagarPage = () => {
         
         {error && (
           <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {paymentError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error de Mercado Pago</AlertTitle>
+            <AlertDescription>
+              <p>{paymentError.message || "Error desconocido"}</p>
+              {paymentError.status && <p>Estado: {paymentError.status}</p>}
+              {paymentError.details && (
+                <details className="mt-2">
+                  <summary>Detalles técnicos</summary>
+                  <pre className="text-xs mt-2 p-2 bg-black/10 rounded overflow-x-auto">
+                    {JSON.stringify(paymentError.details, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </AlertDescription>
           </Alert>
         )}
         
@@ -219,7 +256,7 @@ const PagarPage = () => {
                       Procesando...
                     </>
                   ) : (
-                    "Pagar ahora"
+                    "Pagar ahora con Mercado Pago"
                   )}
                 </Button>
                 

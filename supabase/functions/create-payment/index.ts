@@ -41,7 +41,7 @@ serve(async (req: Request) => {
 
     console.log(`Creating payment for request ${requestId}, amount: ${amount}, customer: ${customerEmail}`)
 
-    // Create preference in Mercado Pago
+    // Create preference in Mercado Pago with more detailed configuration
     const response = await fetch(`${MP_API_URL}/checkout/preferences`, {
       method: 'POST',
       headers: {
@@ -51,15 +51,19 @@ serve(async (req: Request) => {
       body: JSON.stringify({
         items: [
           {
+            id: requestId,
             title: description,
             quantity: 1,
             unit_price: amount,
             currency_id: 'CLP', // Chilean Peso
+            description: `Cuento personalizado para niños`,
+            category_id: 'books',
           }
         ],
         payer: {
           email: customerEmail,
-          name: customerName,
+          name: customerName.split(' ')[0] || customerName, // First name
+          surname: customerName.split(' ').slice(1).join(' ') || '', // Last name(s)
         },
         external_reference: requestId,
         back_urls: {
@@ -68,24 +72,39 @@ serve(async (req: Request) => {
           pending: redirectUrl,
         },
         auto_return: 'approved',
+        statement_descriptor: 'Cuentos Personalizados',
+        payment_methods: {
+          excluded_payment_types: [],
+          default_payment_method_id: null,
+          installments: 1,
+          default_installments: 1
+        },
+        expires: false,
+        notification_url: '',
       }),
     })
 
     const result = await response.json()
 
-    if (response.status !== 201) {
-      console.error('Error creating payment:', result)
+    if (!response.ok) {
+      console.error('Error creating payment:', JSON.stringify(result))
       return new Response(
         JSON.stringify({
           error: 'Failed to create payment',
           details: result,
+          status: response.status,
         }),
         {
-          status: 500,
+          status: response.status,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     }
+
+    console.log('Payment preference created successfully:', JSON.stringify({
+      id: result.id,
+      init_point: result.init_point,
+    }))
 
     return new Response(
       JSON.stringify({

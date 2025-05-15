@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const GraciasPage = () => {
@@ -18,9 +18,14 @@ const GraciasPage = () => {
     // Check if we're returning from Mercado Pago
     const paymentStatus = searchParams.get('status');
     const externalReference = searchParams.get('external_reference');
+    const paymentId = searchParams.get('payment_id') || searchParams.get('preference_id');
     
     if (paymentStatus && externalReference) {
-      console.log("Payment return:", { status: paymentStatus, reference: externalReference });
+      console.log("Payment return:", { 
+        status: paymentStatus, 
+        reference: externalReference,
+        paymentId: paymentId 
+      });
       
       // Update the request status in localStorage based on payment result
       if (externalReference) {
@@ -31,6 +36,7 @@ const GraciasPage = () => {
               ...req,
               status: paymentStatus === 'approved' ? 'completed' : 'payment_' + paymentStatus,
               paymentStatus,
+              paymentId,
             };
           }
           return req;
@@ -50,6 +56,12 @@ const GraciasPage = () => {
             description: "Tu pago está pendiente de confirmación.",
             variant: "default",
           });
+        } else if (paymentStatus === 'in_process') {
+          toast({
+            title: "Pago en proceso",
+            description: "Tu pago está siendo procesado.",
+            variant: "default",
+          });
         } else {
           toast({
             title: "Pago no completado",
@@ -62,12 +74,18 @@ const GraciasPage = () => {
   }, [searchParams, toast]);
   
   // Determine if payment was successful
-  const isPaymentSuccessful = () => {
+  const getPaymentStatus = () => {
     const fromState = location.state?.fromPayment;
     const paymentStatus = searchParams.get('status');
     
-    return fromState || paymentStatus === 'approved';
+    if (fromState) return 'approved';
+    if (!paymentStatus) return 'no_payment';
+    return paymentStatus;
   };
+  
+  const paymentStatus = getPaymentStatus();
+  const isProcessingPayment = paymentStatus === 'pending' || paymentStatus === 'in_process';
+  const isPaymentSuccessful = paymentStatus === 'approved';
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -75,7 +93,7 @@ const GraciasPage = () => {
       
       <main className="flex-grow flex items-center justify-center py-12">
         <Card className="max-w-2xl mx-auto p-8 text-center">
-          {isPaymentSuccessful() ? (
+          {isPaymentSuccessful ? (
             <>
               <div className="w-16 h-16 bg-story-mint/20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="h-8 w-8 text-story-mint" />
@@ -87,11 +105,17 @@ const GraciasPage = () => {
                 Hemos recibido tu pago y comenzaremos a trabajar en tu cuento personalizado.
                 Te notificaremos cuando esté listo para su descarga.
               </p>
+              
+              {searchParams.get('payment_id') && (
+                <p className="mb-4 p-2 bg-muted rounded-md">
+                  ID de Pago: <strong>{searchParams.get('payment_id')}</strong>
+                </p>
+              )}
             </>
-          ) : searchParams.get('status') === 'pending' ? (
+          ) : isProcessingPayment ? (
             <>
               <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertCircle className="h-8 w-8 text-amber-500" />
+                <Clock className="h-8 w-8 text-amber-500" />
               </div>
               
               <h1 className="text-3xl font-bold mb-4">Pago en procesamiento</h1>
@@ -100,6 +124,29 @@ const GraciasPage = () => {
                 Tu pago está siendo procesado. Una vez confirmado, comenzaremos a trabajar en tu cuento personalizado.
                 Te notificaremos cuando todo esté listo.
               </p>
+              
+              {searchParams.get('preference_id') && (
+                <p className="mb-4 p-2 bg-muted rounded-md">
+                  ID de Preferencia: <strong>{searchParams.get('preference_id')}</strong>
+                </p>
+              )}
+            </>
+          ) : paymentStatus === 'rejected' ? (
+            <>
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="h-8 w-8 text-red-500" />
+              </div>
+              
+              <h1 className="text-3xl font-bold mb-4">Pago rechazado</h1>
+              
+              <p className="text-lg text-muted-foreground mb-6">
+                Lo sentimos, tu pago ha sido rechazado. Por favor, intenta nuevamente con otro método de pago
+                o contacta a tu entidad bancaria.
+              </p>
+              
+              <Button className="bg-story-blue hover:bg-story-blue/80 mb-4">
+                <Link to="/pagar">Intentar pagar nuevamente</Link>
+              </Button>
             </>
           ) : (
             <>
