@@ -35,6 +35,10 @@ serve(async (req: Request) => {
       )
     }
 
+    // Log the token format (not the actual token) to help debug
+    console.log(`Token length: ${mercadoPagoAccessToken.length}`);
+    console.log(`Token format check: ${mercadoPagoAccessToken.startsWith('APP_USR-') ? 'Production format' : (mercadoPagoAccessToken.startsWith('TEST-') ? 'Test format' : 'Unknown format')}`);
+
     // Parse request body
     let requestData;
     try {
@@ -77,50 +81,61 @@ serve(async (req: Request) => {
 
     // Create preference in Mercado Pago
     console.log("Creating Mercado Pago preference...");
+    
+    // Create the payload for Mercado Pago
+    const mpPayload = {
+      items: [
+        {
+          id: requestId,
+          title: description,
+          quantity: 1,
+          unit_price: amount,
+          currency_id: 'CLP', // Chilean Peso
+          description: `Cuento personalizado para niños`,
+          category_id: 'books',
+        }
+      ],
+      payer: {
+        email: customerEmail,
+        name: customerName.split(' ')[0] || customerName, // First name
+        surname: customerName.split(' ').slice(1).join(' ') || '', // Last name(s)
+      },
+      external_reference: requestId,
+      back_urls: {
+        success: redirectUrl,
+        failure: redirectUrl,
+        pending: redirectUrl,
+      },
+      auto_return: 'approved',
+      statement_descriptor: 'Cuentos Personalizados',
+      payment_methods: {
+        excluded_payment_types: [],
+        default_payment_method_id: null,
+        installments: 1,
+        default_installments: 1
+      },
+      expires: false,
+    };
+    
+    // Log the payload for debugging
+    console.log("Mercado Pago payload:", JSON.stringify(mpPayload, null, 2));
+    
+    // Make request to Mercado Pago API
     const response = await fetch(`${MP_API_URL}/checkout/preferences`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${mercadoPagoAccessToken}`,
       },
-      body: JSON.stringify({
-        items: [
-          {
-            id: requestId,
-            title: description,
-            quantity: 1,
-            unit_price: amount,
-            currency_id: 'CLP', // Chilean Peso
-            description: `Cuento personalizado para niños`,
-            category_id: 'books',
-          }
-        ],
-        payer: {
-          email: customerEmail,
-          name: customerName.split(' ')[0] || customerName, // First name
-          surname: customerName.split(' ').slice(1).join(' ') || '', // Last name(s)
-        },
-        external_reference: requestId,
-        back_urls: {
-          success: redirectUrl,
-          failure: redirectUrl,
-          pending: redirectUrl,
-        },
-        auto_return: 'approved',
-        statement_descriptor: 'Cuentos Personalizados',
-        payment_methods: {
-          excluded_payment_types: [],
-          default_payment_method_id: null,
-          installments: 1,
-          default_installments: 1
-        },
-        expires: false,
-      }),
+      body: JSON.stringify(mpPayload),
     }).catch(err => {
       console.error('Error communicating with Mercado Pago API:', err);
       return { ok: false, status: 500, statusText: err.message };
     });
 
+    // Log full response for debugging
+    console.log(`Mercado Pago response status: ${response.status} ${response.statusText}`);
+    
     // Handle request error
     if (!response.ok) {
       const errorText = await response.text();
