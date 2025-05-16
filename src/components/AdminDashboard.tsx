@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Json } from '@/integrations/supabase/types';
 
 type FormData = {
   codigoPedido: string;
@@ -57,7 +58,7 @@ type StoryRequest = {
   plotOptions?: { id: string; title: string; description: string }[];
   selectedPlot?: string;
   productionDays?: number;
-  formData?: FormData;
+  formData?: FormData | Json;  // Updated type definition to allow Json type from Supabase
 };
 
 const AdminDashboard = () => {
@@ -475,8 +476,11 @@ const AdminDashboard = () => {
   };
   
   // Componente para mostrar todos los detalles del formulario
-  const FormDetailView = ({ formData }: { formData?: FormData }) => {
+  const FormDetailView = ({ formData }: { formData?: FormData | Json }) => {
     if (!formData) return <p>No hay datos de formulario disponibles</p>;
+
+    // Check if formData is a JSON object before accessing its properties
+    const data = formData as FormData;
 
     return (
       <div className="space-y-6 max-h-[70vh] overflow-y-auto p-2">
@@ -486,27 +490,27 @@ const AdminDashboard = () => {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Código de pedido</TableCell>
-                <TableCell>{formData.codigoPedido}</TableCell>
+                <TableCell>{data.codigoPedido}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Nombre completo</TableCell>
-                <TableCell>{formData.nombreCompleto}</TableCell>
+                <TableCell>{data.nombreCompleto}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Nombre del hijo/a</TableCell>
-                <TableCell>{formData.nombreHijo}</TableCell>
+                <TableCell>{data.nombreHijo}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Edad</TableCell>
-                <TableCell>{formData.edadHijo}</TableCell>
+                <TableCell>{data.edadHijo}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Con quién vive</TableCell>
-                <TableCell>{formData.conQuienVive}</TableCell>
+                <TableCell>{data.conQuienVive}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Personalidad</TableCell>
-                <TableCell>{formData.personalidadHijo}</TableCell>
+                <TableCell>{data.personalidadHijo}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -518,11 +522,11 @@ const AdminDashboard = () => {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Dinámica familiar</TableCell>
-                <TableCell>{formData.dinamicaFamiliar}</TableCell>
+                <TableCell>{data.dinamicaFamiliar}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Cambios recientes</TableCell>
-                <TableCell>{formData.cambiosRecientes}</TableCell>
+                <TableCell>{data.cambiosRecientes}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -534,19 +538,19 @@ const AdminDashboard = () => {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Situación a trabajar</TableCell>
-                <TableCell>{formData.situacionTrabajo}</TableCell>
+                <TableCell>{data.situacionTrabajo}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Cuándo ocurre</TableCell>
-                <TableCell>{formData.cuandoOcurre}</TableCell>
+                <TableCell>{data.cuandoOcurre}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Por qué ocurre</TableCell>
-                <TableCell>{formData.porQueOcurre}</TableCell>
+                <TableCell>{data.porQueOcurre}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">A quién afecta</TableCell>
-                <TableCell>{formData.aquienAfecta}</TableCell>
+                <TableCell>{data.aquienAfecta}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -558,15 +562,15 @@ const AdminDashboard = () => {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Preocupación de padres</TableCell>
-                <TableCell>{formData.preocupacionPadres}</TableCell>
+                <TableCell>{data.preocupacionPadres}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Aspectos difíciles</TableCell>
-                <TableCell>{formData.aspectosDificiles}</TableCell>
+                <TableCell>{data.aspectosDificiles}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Conducta del hijo</TableCell>
-                <TableCell>{formData.conductaHijo}</TableCell>
+                <TableCell>{data.conductaHijo}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -578,15 +582,15 @@ const AdminDashboard = () => {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Acciones intentadas</TableCell>
-                <TableCell>{formData.accionesIntentadas}</TableCell>
+                <TableCell>{data.accionesIntentadas}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Resultados de acciones</TableCell>
-                <TableCell>{formData.resultadosAcciones}</TableCell>
+                <TableCell>{data.resultadosAcciones}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Enseñanza deseada</TableCell>
-                <TableCell>{formData.enseñanzaHistoria}</TableCell>
+                <TableCell>{data.enseñanzaHistoria}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -600,13 +604,13 @@ const AdminDashboard = () => {
                 <TableCell className="font-medium">Objetivos seleccionados</TableCell>
                 <TableCell>
                   <ul className="list-disc pl-5">
-                    {formData.objetivos.map((obj, idx) => (
+                    {data.objetivos.map((obj, idx) => (
                       <li key={idx}>{obj}</li>
                     ))}
                   </ul>
-                  {formData.otrosObjetivos && (
+                  {data.otrosObjetivos && (
                     <div className="mt-2">
-                      <strong>Otros: </strong>{formData.otrosObjetivos}
+                      <strong>Otros: </strong>{data.otrosObjetivos}
                     </div>
                   )}
                 </TableCell>
@@ -621,23 +625,23 @@ const AdminDashboard = () => {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Rutina</TableCell>
-                <TableCell>{formData.rutinaHijo}</TableCell>
+                <TableCell>{data.rutinaHijo}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Intereses</TableCell>
-                <TableCell>{formData.interesesHijo}</TableCell>
+                <TableCell>{data.interesesHijo}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Lo que no le gusta</TableCell>
-                <TableCell>{formData.cosasNoLeGustan}</TableCell>
+                <TableCell>{data.cosasNoLeGustan}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Tradiciones y valores</TableCell>
-                <TableCell>{formData.tradicionesValores}</TableCell>
+                <TableCell>{data.tradicionesValores}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Expresiones significativas</TableCell>
-                <TableCell>{formData.expresionesFamiliares}</TableCell>
+                <TableCell>{data.expresionesFamiliares}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -649,7 +653,7 @@ const AdminDashboard = () => {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Temas a evitar</TableCell>
-                <TableCell>{formData.temasEvitar}</TableCell>
+                <TableCell>{data.temasEvitar}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
