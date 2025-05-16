@@ -27,7 +27,7 @@ const Header = () => {
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
         >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {isMenuOpen ? <X size={24} className="text-white" /> : <Menu size={24} className="text-white" />}
         </button>
         
         {/* Desktop navigation */}
@@ -47,9 +47,11 @@ const Header = () => {
             </Link>
           </nav>
           
-          <Button className="bg-rasti-red hover:bg-rasti-red/90 text-white font-semibold">
-            <Link to="/formulario">Crear Mi Cuento</Link>
-          </Button>
+          <Link to="/formulario">
+            <Button className="bg-rasti-red hover:bg-rasti-red/90 text-white font-semibold">
+              Crear Mi Cuento
+            </Button>
+          </Link>
         </div>
         
         {/* Mobile menu */}

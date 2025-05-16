@@ -18,8 +18,8 @@ const FormularioPage = () => {
               Completa el formulario a continuación y comenzaremos a crear una experiencia única.
             </p>
           </div>
+          <RequestForm />
         </div>
-        <RequestForm />
       </main>
       
       <Footer />
