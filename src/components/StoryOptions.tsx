@@ -156,11 +156,11 @@ const StoryOptions = () => {
         throw new Error("ID de solicitud no válido");
       }
       
-      // Actualizar la selección en Supabase
+      // Actualizar la selección en Supabase - CRITICAL UPDATE
       const { error: updateError } = await supabase
         .from('story_requests')
         .update({ 
-          status: 'seleccion',
+          status: 'seleccion',  // Aseguramos que el estado se actualice a "seleccion"
           selected_plot: selectedOption 
         })
         .eq('request_id', requestId);
@@ -183,6 +183,23 @@ const StoryOptions = () => {
         console.error("Error al verificar la actualización:", refreshError);
       } else {
         console.log("Estado actualizado en la base de datos:", updatedRequest);
+        
+        // Verificación adicional para asegurar que el estado se actualizó correctamente
+        if (updatedRequest.status !== 'seleccion') {
+          console.warn("El estado no se actualizó correctamente. Intentando actualizar nuevamente...");
+          
+          // Intento adicional si el estado no se actualizó
+          const { error: retryError } = await supabase
+            .from('story_requests')
+            .update({ status: 'seleccion' })
+            .eq('request_id', requestId);
+            
+          if (retryError) {
+            console.error("Error en el segundo intento:", retryError);
+          } else {
+            console.log("Estado actualizado en segundo intento");
+          }
+        }
       }
       
       // Buscar la opción seleccionada para mostrarla en el mensaje de éxito

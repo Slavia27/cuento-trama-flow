@@ -23,18 +23,17 @@ const PlotOptionsView = ({
   isResending,
   isSendingPayment
 }: PlotOptionsViewProps) => {
-  // Si no hay opciones pero no estamos en pendiente, mostrar mensaje
+  // Si no hay opciones, mostrar mensaje con botón para reenviar
   if (plotOptions.length === 0) {
     return (
       <div className="mt-6 p-4 border rounded-md bg-amber-50 text-amber-800">
         <p>No se encontraron opciones de trama para esta solicitud. 
-        {status === 'opciones' && 
           <span className="block mt-2">
             Puedes utilizar el botón "Reenviar Opciones" para reenviar el correo al cliente.
           </span>
-        }</p>
+        </p>
         <div className="mt-4 flex gap-2">
-          {status === 'opciones' && (
+          {(status === 'opciones' || status === 'seleccion' || status === 'pagado') && (
             <Button 
               variant="outline" 
               size="sm"
@@ -69,7 +68,7 @@ const PlotOptionsView = ({
         <h4 className="text-lg font-medium">Opciones de Trama Enviadas</h4>
         
         <div className="flex gap-2">
-          {status === 'opciones' && (
+          {(status === 'opciones' || status === 'seleccion' || status === 'pagado' || status === 'produccion') && (
             <Button 
               variant="outline" 
               size="sm"
