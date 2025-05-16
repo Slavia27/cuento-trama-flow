@@ -4,16 +4,13 @@ import { Resend } from "npm:resend@2.0.0";
 
 // Inicializar Resend con la API key desde las variables de entorno
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
-
-// Verificamos que la API key exista
 if (!resendApiKey) {
   console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
 }
 
-// Inicializamos Resend directamente
+// Inicializa Resend - NO usar verificación condicional aquí
 const resend = new Resend(resendApiKey);
 
-// Definir headers CORS para permitir solicitudes desde el navegador
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -67,7 +64,8 @@ serve(async (req) => {
     `).join('');
 
     // Construir URL de selección
-    const selectionUrl = `${req.headers.get("origin") || "https://tu-sitio-web.com"}/opciones/${requestId}`;
+    const origin = req.headers.get("origin") || "https://tu-sitio-web.com";
+    const selectionUrl = `${origin}/opciones/${requestId}`;
     
     console.log("Generando contenido del correo");
     console.log("URL de selección:", selectionUrl);
@@ -108,11 +106,11 @@ serve(async (req) => {
       `,
     });
 
-    console.log("Email attempt response:", emailResponse);
+    console.log("Email attempt response:", JSON.stringify(emailResponse));
     
     // Verificar si hay errores en la respuesta de Resend
     if (emailResponse.error) {
-      console.error("Error al enviar el correo:", emailResponse.error);
+      console.error("Error al enviar el correo:", JSON.stringify(emailResponse.error));
       throw new Error(`Error al enviar el correo: ${emailResponse.error.message}`);
     }
 
