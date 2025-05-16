@@ -19,7 +19,7 @@ type StoryRequest = {
   id: string;
   name: string;
   childName: string;
-  status: string;
+  status: 'pendiente' | 'opciones' | 'seleccion' | 'pagado' | 'produccion' | 'envio' | 'completado';
   plotOptions?: StoryOption[];
   selectedPlot?: string;
 };
@@ -33,33 +33,52 @@ const StoryOptions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Cargar la solicitud y opciones desde localStorage (simula base de datos)
+  // Load request and options from localStorage
   useEffect(() => {
     const loadRequest = () => {
-      const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      const foundRequest = savedRequests.find((req: StoryRequest) => req.id === requestId);
-      
-      if (foundRequest && foundRequest.plotOptions && foundRequest.plotOptions.length > 0) {
-        setRequest(foundRequest);
-        if (foundRequest.selectedPlot) {
-          setSelectedOption(foundRequest.selectedPlot);
+      try {
+        const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
+        console.log("All saved requests:", savedRequests);
+        
+        const foundRequest = savedRequests.find((req: StoryRequest) => req.id === requestId);
+        console.log("Found request:", foundRequest);
+        
+        if (foundRequest) {
+          // Make sure plotOptions exists and has items
+          if (!foundRequest.plotOptions || foundRequest.plotOptions.length === 0) {
+            setError("No se encontraron opciones de trama para esta solicitud.");
+            setLoading(false);
+            return;
+          }
+          
+          setRequest(foundRequest);
+          if (foundRequest.selectedPlot) {
+            setSelectedOption(foundRequest.selectedPlot);
+          }
+        } else {
+          // If request not found, show error and don't redirect yet
+          setError("No se encontró la solicitud.");
+          toast({
+            title: "Error",
+            description: "No se encontró la solicitud especificada.",
+            variant: "destructive",
+          });
         }
-        setError(null);
-      } else {
-        // Si no se encuentra o no tiene opciones, redireccionar
-        navigate('/');
+      } catch (err) {
+        console.error("Error loading request:", err);
+        setError("Error al cargar la solicitud. Por favor intente nuevamente.");
         toast({
           title: "Error",
-          description: "No se encontraron opciones para esta solicitud.",
+          description: "Error al cargar la solicitud. Por favor intente nuevamente.",
           variant: "destructive",
         });
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
     
     loadRequest();
-  }, [requestId, navigate, toast]);
+  }, [requestId, toast]);
   
   const handleOptionSelect = (optionId: string) => {
     console.log("Option selected:", optionId);
@@ -131,10 +150,32 @@ const StoryOptions = () => {
     );
   }
   
-  if (!request) {
+  if (error) {
+    return (
+      <div className="container py-12 max-w-xl mx-auto">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <div className="text-center">
+          <Button onClick={() => navigate('/')} className="bg-rasti-blue hover:bg-rasti-blue/80">
+            Volver al inicio
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!request || !request.plotOptions || request.plotOptions.length === 0) {
     return (
       <div className="container py-12 text-center">
-        <p>No se encontró la solicitud.</p>
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Sin opciones disponibles</AlertTitle>
+          <AlertDescription>No hay opciones de trama disponibles para esta solicitud.</AlertDescription>
+        </Alert>
+        <Button onClick={() => navigate('/')} className="bg-rasti-blue hover:bg-rasti-blue/80">
+          Volver al inicio
+        </Button>
       </div>
     );
   }

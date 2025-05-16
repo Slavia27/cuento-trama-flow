@@ -76,36 +76,57 @@ const AdminDashboard = () => {
   // Cargar solicitudes de localStorage (simulando una base de datos)
   useEffect(() => {
     const loadAndUpdateRequests = () => {
-      const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      
-      // Update any legacy status values to match the new status flow
-      const updatedRequests = savedRequests.map((req: StoryRequest) => {
-        // Convert old status values to new ones
-        if (req.status === 'pending') {
-          return { ...req, status: 'pendiente' };
-        } 
-        if (req.status === 'options_sent') {
-          return { ...req, status: 'opciones' };
+      try {
+        const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
+        
+        // Update any legacy status values to match the new status flow
+        const updatedRequests = savedRequests.map((req: any) => {
+          const typedRequest: StoryRequest = { ...req };
+          
+          // Convert old status values to new ones
+          if (req.status === 'pending') {
+            typedRequest.status = 'pendiente';
+          } 
+          else if (req.status === 'options_sent') {
+            typedRequest.status = 'opciones';
+          }
+          else if (req.status === 'option_selected' || req.status === 'payment_created' || req.status === 'payment_pending') {
+            typedRequest.status = 'seleccion';
+          }
+          else if (req.status === 'completed') {
+            typedRequest.status = 'completado';
+          }
+          // If it's already using the new status values, keep them
+          else if (['pendiente', 'opciones', 'seleccion', 'pagado', 'produccion', 'envio', 'completado'].includes(req.status)) {
+            typedRequest.status = req.status;
+          }
+          // Default fallback
+          else {
+            typedRequest.status = 'pendiente';
+          }
+          
+          return typedRequest;
+        });
+        
+        // Save the updated requests back to localStorage
+        if (JSON.stringify(updatedRequests) !== JSON.stringify(savedRequests)) {
+          localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
         }
-        if (req.status === 'option_selected' || req.status === 'payment_created' || req.status === 'payment_pending') {
-          return { ...req, status: 'seleccion' };
-        }
-        if (req.status === 'completed') {
-          return { ...req, status: 'completado' };
-        }
-        return req;
-      });
-      
-      // Save the updated requests back to localStorage
-      if (JSON.stringify(updatedRequests) !== JSON.stringify(savedRequests)) {
-        localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
+        
+        setRequests(updatedRequests);
+        console.log("Loaded requests:", updatedRequests);
+      } catch (error) {
+        console.error("Error loading requests:", error);
+        toast({
+          title: "Error",
+          description: "Error al cargar las solicitudes",
+          variant: "destructive",
+        });
       }
-      
-      setRequests(updatedRequests as StoryRequest[]);
     };
     
     loadAndUpdateRequests();
-  }, []);
+  }, [toast]);
   
   // Guardar solicitudes en localStorage cuando se actualizan
   useEffect(() => {
@@ -295,7 +316,7 @@ const AdminDashboard = () => {
           return {
             ...req,
             status: 'pagado',
-          };
+          } as StoryRequest;
         }
         return req;
       });
@@ -331,7 +352,7 @@ const AdminDashboard = () => {
         return {
           ...req,
           status: newState,
-        };
+        } as StoryRequest;
       }
       return req;
     });
@@ -340,7 +361,7 @@ const AdminDashboard = () => {
     setSelectedRequest(prev => prev ? {
       ...prev,
       status: newState,
-    } : null);
+    } as StoryRequest : null);
     
     const statusLabels = {
       'produccion': 'Producción',
