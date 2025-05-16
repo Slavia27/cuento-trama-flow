@@ -37,14 +37,16 @@ const RequestDetails = ({
   useEffect(() => {
     // Fetch plot options when a request is selected
     const loadPlotOptions = async () => {
-      if (selectedRequest && selectedRequest.status !== 'pendiente') {
+      if (selectedRequest) {
         const options = await fetchPlotOptions(selectedRequest.id);
         setPlotOptions(options);
+      } else {
+        setPlotOptions([]);
       }
     };
     
     loadPlotOptions();
-  }, [selectedRequest]);
+  }, [selectedRequest, fetchPlotOptions]);
 
   const handleSendPlotOptions = async (options: { title: string; description: string }[]) => {
     if (!selectedRequest) return;

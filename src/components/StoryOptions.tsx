@@ -141,10 +141,12 @@ const StoryOptions = () => {
     }
     
     try {
-      if (!requestId) return;
-      
       setIsSubmitting(true);
       console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${requestId}`);
+      
+      if (!requestId) {
+        throw new Error("ID de solicitud no válido");
+      }
       
       // Actualizar la selección en Supabase
       const { error: updateError } = await supabase
@@ -161,6 +163,20 @@ const StoryOptions = () => {
       }
 
       console.log("Selección guardada correctamente");
+      
+      // Refrescar datos para confirmar el guardado
+      const { data: updatedRequest, error: refreshError } = await supabase
+        .from('story_requests')
+        .select('status, selected_plot')
+        .eq('request_id', requestId)
+        .single();
+        
+      if (refreshError) {
+        console.error("Error al verificar la actualización:", refreshError);
+      } else {
+        console.log("Estado actualizado en la base de datos:", updatedRequest);
+      }
+      
       const selectedOptionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       
       toast({
@@ -226,6 +242,41 @@ const StoryOptions = () => {
         <Button onClick={() => navigate('/')} className="bg-rasti-blue hover:bg-rasti-blue/80">
           Volver al inicio
         </Button>
+      </div>
+    );
+  }
+  
+  // Si ya se ha seleccionado una opción anteriormente, mostrar mensaje y redirigir
+  if (request.status === 'seleccion' || request.status === 'pagado' || 
+      request.status === 'produccion' || request.status === 'envio' || 
+      request.status === 'completado') {
+    
+    return (
+      <div className="container py-12 max-w-xl mx-auto">
+        <Alert className="mb-6">
+          <AlertTitle>Opción ya seleccionada</AlertTitle>
+          <AlertDescription>
+            Ya has seleccionado una opción para esta solicitud. 
+            {request.status === 'seleccion' && " Te redirigiremos a la página de pago."}
+          </AlertDescription>
+        </Alert>
+        <div className="text-center">
+          <Button 
+            onClick={() => {
+              const selectedOptionData = request.plotOptions?.find(opt => opt.id === request.selectedPlot);
+              navigate('/pagar', { 
+                state: { 
+                  requestId: request.id,
+                  optionId: request.selectedPlot,
+                  optionTitle: selectedOptionData?.title
+                } 
+              });
+            }} 
+            className="bg-rasti-blue hover:bg-rasti-blue/80"
+          >
+            {request.status === 'seleccion' ? 'Ir a Pagar' : 'Volver al inicio'}
+          </Button>
+        </div>
       </div>
     );
   }
