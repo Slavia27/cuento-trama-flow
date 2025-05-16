@@ -64,14 +64,15 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				// Colores temáticos inspirados en Rasti.cl
-				story: {
-					'blue': '#2980b9',
-					'pink': '#e74c3c',
-					'mint': '#27ae60',
-					'yellow': '#f1c40f',
-					'purple': '#9b59b6',
-					'dark': '#2c3e50',
-					'light': '#ecf0f1'
+				rasti: {
+					'red': '#E42528',
+					'yellow': '#FDC300',
+					'blue': '#0091D7',
+					'green': '#49B675',
+					'black': '#000000',
+					'white': '#FFFFFF',
+					'gray': '#F5F5F5',
+					'darkgray': '#333333',
 				}
 			},
 			fontFamily: {

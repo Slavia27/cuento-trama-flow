@@ -8,13 +8,15 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="w-full bg-story-blue py-3 shadow-md text-white">
+    <header className="w-full bg-rasti-blue py-3 sticky top-0 z-50">
       <div className="container flex items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-            <span className="text-xl font-bold text-story-blue">C</span>
+          <div className="flex gap-1">
+            <div className="w-6 h-6 bg-rasti-red rounded-sm"></div>
+            <div className="w-6 h-6 bg-rasti-yellow rounded-sm"></div>
+            <div className="w-6 h-6 bg-rasti-green rounded-sm"></div>
           </div>
-          <span className="text-2xl font-bold font-montserrat">
+          <span className="text-2xl font-bold font-montserrat text-white">
             Cuentos Personalizados
           </span>
         </Link>
@@ -31,50 +33,60 @@ const Header = () => {
         {/* Desktop navigation */}
         <div className="hidden md:flex items-center gap-6">
           <nav className="flex items-center gap-6">
-            <Link to="/" className="font-medium hover:text-story-yellow transition-colors">
+            <Link to="/" className="font-medium text-white hover:text-rasti-yellow transition-colors">
               Inicio
             </Link>
-            <Link to="/como-funciona" className="font-medium hover:text-story-yellow transition-colors">
+            <Link to="/como-funciona" className="font-medium text-white hover:text-rasti-yellow transition-colors">
               Cómo Funciona
             </Link>
-            <Link to="/admin" className="font-medium hover:text-story-yellow transition-colors">
+            <Link to="/quienes-somos" className="font-medium text-white hover:text-rasti-yellow transition-colors">
+              Quiénes Somos
+            </Link>
+            <Link to="/admin" className="font-medium text-white hover:text-rasti-yellow transition-colors">
               Admin
             </Link>
           </nav>
           
-          <Button className="bg-story-pink hover:bg-story-pink/90 text-white font-semibold">
+          <Button className="bg-rasti-red hover:bg-rasti-red/90 text-white font-semibold">
             <Link to="/formulario">Crear Mi Cuento</Link>
           </Button>
         </div>
         
         {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="absolute top-16 left-0 right-0 bg-story-blue z-50 shadow-lg md:hidden">
+          <div className="absolute top-16 left-0 right-0 bg-rasti-blue z-50 shadow-lg md:hidden">
             <nav className="flex flex-col py-4">
               <Link 
                 to="/" 
-                className="px-4 py-2 hover:bg-story-blue/80"
+                className="px-4 py-2 text-white hover:bg-rasti-blue/80"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Inicio
               </Link>
               <Link 
                 to="/como-funciona" 
-                className="px-4 py-2 hover:bg-story-blue/80"
+                className="px-4 py-2 text-white hover:bg-rasti-blue/80"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Cómo Funciona
               </Link>
               <Link 
+                to="/quienes-somos" 
+                className="px-4 py-2 text-white hover:bg-rasti-blue/80"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Quiénes Somos
+              </Link>
+              <Link 
                 to="/admin" 
-                className="px-4 py-2 hover:bg-story-blue/80"
+                className="px-4 py-2 text-white hover:bg-rasti-blue/80"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Admin
               </Link>
               <Link 
                 to="/formulario" 
-                className="px-4 py-2 bg-story-pink hover:bg-story-pink/90 mx-4 mt-2 text-center rounded"
+                className="px-4 py-2 bg-rasti-red hover:bg-rasti-red/90 mx-4 mt-2 text-center rounded"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Crear Mi Cuento

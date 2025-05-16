@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import FormularioPage from "./pages/FormularioPage";
 import AdminPage from "./pages/AdminPage";
 import ComoFuncionaPage from "./pages/ComoFuncionaPage";
+import QuienesSomosPage from "./pages/QuienesSomosPage";
 import GraciasPage from "./pages/GraciasPage";
 import OpcionesPage from "./pages/OpcionesPage";
 import PagarPage from "./pages/PagarPage";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/formulario" element={<FormularioPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/como-funciona" element={<ComoFuncionaPage />} />
+          <Route path="/quienes-somos" element={<QuienesSomosPage />} />
           <Route path="/gracias" element={<GraciasPage />} />
           <Route path="/opciones/:requestId" element={<OpcionesPage />} />
           <Route path="/pagar" element={<PagarPage />} />
