@@ -10,7 +10,8 @@ if (!resendApiKey) {
   console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
 }
 
-const resend = new Resend(resendApiKey);
+// Inicializamos Resend solo si tenemos una API key
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 // Definir headers CORS para permitir solicitudes desde el navegador
 const corsHeaders = {
@@ -30,7 +31,7 @@ interface EmailRequest {
   childName: string;
   requestId: string;
   plotOptions: PlotOption[];
-  resend?: boolean; // Nuevo campo para indicar si es un reenvío
+  resend?: boolean; // Campo para indicar si es un reenvío
 }
 
 serve(async (req) => {
@@ -41,13 +42,13 @@ serve(async (req) => {
 
   try {
     // Verificar que la API key de Resend esté configurada
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY no está configurada. Por favor, añade este secreto en la configuración de funciones de Supabase.");
+    if (!resendApiKey || !resend) {
+      throw new Error("RESEND_API_KEY no está configurada o es inválida. Por favor, añade este secreto en la configuración de funciones de Supabase.");
     }
 
     console.log("Recibiendo solicitud para enviar opciones de trama");
     
-    const { to, name, childName, requestId, plotOptions, resend = false } = await req.json() as EmailRequest;
+    const { to, name, childName, requestId, plotOptions, resend: isResend = false } = await req.json() as EmailRequest;
 
     if (!to || !requestId || !plotOptions || plotOptions.length === 0) {
       throw new Error("Missing required parameters");
@@ -55,7 +56,7 @@ serve(async (req) => {
     
     console.log(`Enviando correo a: ${to} para el cuento de ${childName}`);
     console.log(`Número de opciones: ${plotOptions.length}`);
-    console.log(`¿Es un reenvío?: ${resend ? "Sí" : "No"}`);
+    console.log(`¿Es un reenvío?: ${isResend ? "Sí" : "No"}`);
     
     // Generar el HTML para las opciones de trama
     const optionsHTML = plotOptions.map((option, index) => `
@@ -74,7 +75,7 @@ serve(async (req) => {
     const emailResponse = await resend.emails.send({
       from: "Cuentos Personalizados <notificaciones@rasti.cl>", 
       to: [to],
-      subject: resend ? `[REENVÍO] Opciones de trama para el cuento de ${childName}` : `Opciones de trama para el cuento de ${childName}`,
+      subject: isResend ? `[REENVÍO] Opciones de trama para el cuento de ${childName}` : `Opciones de trama para el cuento de ${childName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #3b82f6; padding: 20px; text-align: center; color: white;">
@@ -86,7 +87,7 @@ serve(async (req) => {
             
             <p>¡Gracias por confiar en nosotros para crear un cuento personalizado para ${childName}!</p>
             
-            <p>${resend ? 'Te reenviamos' : 'Hemos preparado'} algunas opciones de trama basadas en la información que nos proporcionaste. Por favor, revisa las siguientes opciones y selecciona la que más te guste:</p>
+            <p>${isResend ? 'Te reenviamos' : 'Hemos preparado'} algunas opciones de trama basadas en la información que nos proporcionaste. Por favor, revisa las siguientes opciones y selecciona la que más te guste:</p>
             
             ${optionsHTML}
             
