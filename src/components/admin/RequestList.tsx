@@ -16,11 +16,11 @@ const RequestList = ({ requests, selectedRequest, onSelectRequest, onDeleteReque
   const getStatusLabel = (status: string): string => {
     switch (status) {
       case 'pendiente': return 'Pendiente';
-      case 'opciones': return 'Opciones Enviadas';
-      case 'seleccion': return 'Opción Seleccionada';
+      case 'opciones': return 'Opciones';
+      case 'seleccion': return 'Seleccionada';
       case 'pagado': return 'Pagado';
-      case 'produccion': return 'En Producción';
-      case 'envio': return 'En Envío';
+      case 'produccion': return 'Producción';
+      case 'envio': return 'Envío';
       case 'completado': return 'Completado';
       default: return status;
     }
@@ -33,9 +33,11 @@ const RequestList = ({ requests, selectedRequest, onSelectRequest, onDeleteReque
       <h3 className="text-xl font-bold mb-4">Solicitudes</h3>
       
       <Tabs defaultValue="pendiente">
-        <TabsList className="grid w-full grid-cols-7 mb-4">
+        <TabsList className="w-full mb-4 flex flex-wrap gap-1">
           {statusTabs.map(status => (
-            <TabsTrigger key={status} value={status}>{getStatusLabel(status)}</TabsTrigger>
+            <TabsTrigger key={status} value={status} className="text-xs md:text-sm flex-1 whitespace-nowrap">
+              {getStatusLabel(status)}
+            </TabsTrigger>
           ))}
         </TabsList>
         

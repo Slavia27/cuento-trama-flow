@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -10,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const goalItems = [
   {
@@ -135,28 +135,32 @@ const RequestForm = () => {
     try {
       console.log('Datos del formulario:', data);
       
-      // Simulamos un tiempo de respuesta
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Generate a unique request ID
+      const requestId = `req-${Date.now()}`;
       
-      // Creamos el objeto de solicitud con todos los datos
+      // Create the story request object for Supabase
       const storyRequest = {
-        id: `req-${Date.now()}`,
+        request_id: requestId,
         name: data.nombreCompleto,
         email: data.correoElectronico,
-        childName: data.nombreHijo,
-        childAge: data.edadHijo,
-        storyTheme: data.situacionTrabajo,
-        specialInterests: data.interesesHijo,
-        additionalDetails: data.otrosObjetivos || '',
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        formData: data, // Guardamos todos los datos del formulario
+        child_name: data.nombreHijo,
+        child_age: data.edadHijo,
+        story_theme: data.situacionTrabajo,
+        special_interests: data.interesesHijo,
+        additional_details: data.otrosObjetivos || '',
+        status: 'pendiente',
+        form_data: data, // Store the complete form data
       };
       
-      // Guardamos en localStorage para simular persistencia
-      const requests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      requests.push(storyRequest);
-      localStorage.setItem('storyRequests', JSON.stringify(requests));
+      // Save to Supabase
+      const { error } = await supabase
+        .from('story_requests')
+        .insert(storyRequest);
+      
+      if (error) {
+        console.error('Error al guardar en Supabase:', error);
+        throw new Error(error.message);
+      }
       
       toast({
         title: "¡Solicitud enviada con éxito!",
@@ -165,12 +169,12 @@ const RequestForm = () => {
       
       navigate('/gracias');
     } catch (error) {
+      console.error('Error:', error);
       toast({
         title: "Error al enviar la solicitud",
         description: "Por favor intenta nuevamente más tarde.",
         variant: "destructive",
       });
-      console.error('Error:', error);
     } finally {
       setIsSubmitting(false);
     }

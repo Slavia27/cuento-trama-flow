@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useRequests } from '@/hooks/useRequests';
 import { StoryRequest } from '@/types/story';
@@ -8,7 +8,7 @@ import RequestDetails from '@/components/admin/RequestDetails';
 
 const AdminDashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState<StoryRequest | null>(null);
-  const { requests, deleteRequest, updateRequestStatus, updateProductionDays } = useRequests();
+  const { requests, deleteRequest, updateRequestStatus, updateProductionDays, loadRequests } = useRequests();
   
   const handleSelectRequest = (request: StoryRequest) => {
     setSelectedRequest(request);
@@ -24,10 +24,22 @@ const AdminDashboard = () => {
   const handleRequestUpdate = (updatedRequest: StoryRequest) => {
     setSelectedRequest(updatedRequest);
   };
+
+  const handleRefresh = () => {
+    loadRequests();
+  };
   
   return (
     <div className="container py-10">
-      <h2 className="text-3xl font-bold mb-8">Panel de Administración</h2>
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold">Panel de Administración</h2>
+        <button 
+          onClick={handleRefresh}
+          className="px-4 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+        >
+          Actualizar datos
+        </button>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Lista de solicitudes */}

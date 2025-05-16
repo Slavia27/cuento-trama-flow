@@ -17,7 +17,7 @@ export const useRequests = () => {
       console.log("Fetching story requests from Supabase...");
       setIsLoading(true);
       
-      // Get all requests from Supabase
+      // Get all requests from Supabase with explicit ordering
       const { data, error } = await supabase
         .from('story_requests')
         .select('*')
