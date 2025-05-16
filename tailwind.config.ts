@@ -63,13 +63,15 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Colores temáticos para la plataforma de cuentos
+				// Colores temáticos inspirados en Rasti.cl
 				story: {
-					'blue': '#A5D8FF',
-					'pink': '#FFD6E7',
-					'mint': '#B9E6C9',
-					'yellow': '#FFF3B8',
-					'purple': '#D8B4FE'
+					'blue': '#2980b9',
+					'pink': '#e74c3c',
+					'mint': '#27ae60',
+					'yellow': '#f1c40f',
+					'purple': '#9b59b6',
+					'dark': '#2c3e50',
+					'light': '#ecf0f1'
 				}
 			},
 			fontFamily: {
