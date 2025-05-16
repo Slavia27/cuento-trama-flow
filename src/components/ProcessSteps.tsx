@@ -25,9 +25,15 @@ const ProcessSteps = () => {
     },
     {
       number: 4,
-      title: 'Recibe tu cuento',
-      description: 'Crearemos y entregaremos tu cuento personalizado según las especificaciones acordadas.',
+      title: 'Seguimiento de producción',
+      description: 'Tu cuento personalizado entra en producción y es creado con dedicación en los días hábiles establecidos.',
       color: 'bg-rasti-green',
+    },
+    {
+      number: 5,
+      title: 'Recibe tu cuento',
+      description: 'Recibe tu cuento personalizado listo para compartir y disfrutar.',
+      color: 'bg-rasti-blue',
     }
   ];
 
@@ -40,9 +46,20 @@ const ProcessSteps = () => {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {steps.map((step) => (
-          <Card key={step.number} className="story-card border-t-4 hover:translate-y-[-5px] transition-transform" style={{ borderTopColor: step.color === 'bg-rasti-blue' ? '#309AAC' : step.color === 'bg-rasti-red' ? '#E79182' : step.color === 'bg-rasti-yellow' ? '#E7D56F' : '#309AAC' }}>
+          <Card 
+            key={step.number} 
+            className="story-card border-t-4 hover:translate-y-[-5px] transition-transform" 
+            style={{ 
+              borderTopColor: 
+                step.color === 'bg-rasti-blue' ? '#309AAC' : 
+                step.color === 'bg-rasti-red' ? '#E79182' : 
+                step.color === 'bg-rasti-yellow' ? '#E7D56F' : 
+                step.color === 'bg-rasti-green' ? '#309AAC' :
+                '#309AAC'
+            }}
+          >
             <div className={`${step.color} w-12 h-12 rounded-full flex items-center justify-center mb-4 ${step.textColor || 'text-white'} font-bold text-lg`}>
               {step.number}
             </div>

@@ -5,7 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { RefreshCw, Mail } from 'lucide-react';
+import { RefreshCw, Mail, FileImport, ArrowDownToLine } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 type StoryRequest = {
   id: string;
@@ -20,6 +24,20 @@ type StoryRequest = {
   createdAt: string;
   plotOptions?: { id: string; title: string; description: string }[];
   selectedPlot?: string;
+  externalOrderId?: string; // Add this field to track orders from external system
+  productionDays?: number; // Add this field to track production days
+};
+
+type ExternalOrder = {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  childName: string;
+  childAge: string;
+  theme: string;
+  interests: string;
+  notes?: string;
+  orderDate: string;
 };
 
 const AdminDashboard = () => {
@@ -33,13 +51,59 @@ const AdminDashboard = () => {
   const [isSending, setIsSending] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [isSendingPaymentLink, setIsSendingPaymentLink] = useState(false);
+  const [externalOrders, setExternalOrders] = useState<ExternalOrder[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const [productionDays, setProductionDays] = useState(15);
   const { toast } = useToast();
   
   // Cargar solicitudes de localStorage (simulando una base de datos)
   useEffect(() => {
     const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
     setRequests(savedRequests as StoryRequest[]);
+    
+    // Simular carga de órdenes externas (en una implementación real, esto vendría de la API)
+    fetchExternalOrders();
   }, []);
+  
+  const fetchExternalOrders = () => {
+    // Simulación de órdenes externas - en implementación real, se llamaría a la API de la otra app
+    const mockExternalOrders: ExternalOrder[] = [
+      {
+        id: "EXT-" + Math.floor(Math.random() * 10000),
+        customerName: "Francisca Sandoval",
+        customerEmail: "fsandoval@ejemplo.com",
+        childName: "Mateo",
+        childAge: "6",
+        theme: "Dinosaurios",
+        interests: "Le encantan los dinosaurios, especialmente el T-Rex. También disfruta de aventuras en la selva.",
+        notes: "Regalo para su cumpleaños el próximo mes",
+        orderDate: new Date().toISOString(),
+      },
+      {
+        id: "EXT-" + Math.floor(Math.random() * 10000),
+        customerName: "Carlos Mendoza",
+        customerEmail: "cmendoza@ejemplo.com",
+        childName: "Valentina",
+        childAge: "8",
+        theme: "Princesas",
+        interests: "Le fascinan las princesas valientes y las historias de magia",
+        orderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: "EXT-" + Math.floor(Math.random() * 10000),
+        customerName: "Ana María López",
+        customerEmail: "amlopez@ejemplo.com",
+        childName: "Sebastián",
+        childAge: "5",
+        theme: "Superhéroes",
+        interests: "Le gustan los superhéroes que protegen el medio ambiente",
+        notes: "Necesita lenguaje simple por su edad",
+        orderDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      }
+    ];
+    
+    setExternalOrders(mockExternalOrders);
+  };
   
   // Guardar solicitudes en localStorage cuando se actualizan
   useEffect(() => {
@@ -55,6 +119,13 @@ const AdminDashboard = () => {
       { title: '', description: '' },
       { title: '', description: '' },
     ]);
+    
+    // Si el pedido tiene días de producción establecidos, actualizar el estado
+    if (request.productionDays) {
+      setProductionDays(request.productionDays);
+    } else {
+      setProductionDays(15); // Valor predeterminado
+    }
   };
   
   const handlePlotOptionChange = (index: number, field: 'title' | 'description', value: string) => {
@@ -217,6 +288,101 @@ const AdminDashboard = () => {
     }
   };
   
+  const handleImportOrder = (order: ExternalOrder) => {
+    // Convertir un pedido externo a formato de solicitud de historia
+    const newRequest: StoryRequest = {
+      id: `story-${Date.now()}`,
+      name: order.customerName,
+      email: order.customerEmail,
+      childName: order.childName,
+      childAge: order.childAge,
+      storyTheme: order.theme,
+      specialInterests: order.interests,
+      additionalDetails: order.notes,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      externalOrderId: order.id,
+      productionDays: 15, // Valor predeterminado
+    };
+    
+    // Agregar la nueva solicitud al arreglo de solicitudes
+    setRequests(prevRequests => [newRequest, ...prevRequests]);
+    
+    // Actualizar las órdenes externas, eliminando la importada
+    setExternalOrders(prevOrders => 
+      prevOrders.filter(extOrder => extOrder.id !== order.id)
+    );
+    
+    toast({
+      title: "Orden importada",
+      description: `La orden de ${order.customerName} ha sido importada exitosamente.`,
+    });
+  };
+  
+  const handleBatchImport = () => {
+    setIsImporting(true);
+    
+    // Simular un proceso de importación
+    setTimeout(() => {
+      // Convertir todas las órdenes externas a solicitudes de historias
+      const newRequests = externalOrders.map(order => ({
+        id: `story-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        name: order.customerName,
+        email: order.customerEmail,
+        childName: order.childName,
+        childAge: order.childAge,
+        storyTheme: order.theme,
+        specialInterests: order.interests,
+        additionalDetails: order.notes,
+        status: 'pending' as const,
+        createdAt: new Date().toISOString(),
+        externalOrderId: order.id,
+        productionDays: 15, // Valor predeterminado
+      }));
+      
+      // Agregar las nuevas solicitudes al arreglo de solicitudes
+      setRequests(prevRequests => [...newRequests, ...prevRequests]);
+      
+      // Limpiar las órdenes externas
+      setExternalOrders([]);
+      
+      setIsImporting(false);
+      
+      toast({
+        title: "Importación completada",
+        description: `Se han importado ${newRequests.length} órdenes exitosamente.`,
+      });
+    }, 2000);
+  };
+  
+  const handleUpdateProductionDays = () => {
+    if (!selectedRequest) return;
+    
+    // Actualizar los días de producción para la solicitud seleccionada
+    const updatedRequests = requests.map(req => {
+      if (req.id === selectedRequest.id) {
+        return {
+          ...req,
+          productionDays,
+        };
+      }
+      return req;
+    });
+    
+    setRequests(updatedRequests);
+    
+    // Actualizar la solicitud seleccionada
+    setSelectedRequest(prev => prev ? {
+      ...prev,
+      productionDays,
+    } : null);
+    
+    toast({
+      title: "Días de producción actualizados",
+      description: `Se han establecido ${productionDays} días hábiles para la producción del cuento.`,
+    });
+  };
+  
   return (
     <div className="container py-10">
       <h2 className="text-3xl font-bold mb-8">Panel de Administración</h2>
@@ -228,11 +394,12 @@ const AdminDashboard = () => {
             <h3 className="text-xl font-bold mb-4">Solicitudes</h3>
             
             <Tabs defaultValue="pending">
-              <TabsList className="grid w-full grid-cols-4 mb-4">
+              <TabsList className="grid w-full grid-cols-5 mb-4">
                 <TabsTrigger value="pending">Pendientes</TabsTrigger>
                 <TabsTrigger value="options_sent">Opciones</TabsTrigger>
                 <TabsTrigger value="option_selected">Selección</TabsTrigger>
                 <TabsTrigger value="completed">Completados</TabsTrigger>
+                <TabsTrigger value="external">Externos</TabsTrigger>
               </TabsList>
               
               <TabsContent value="pending" className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -241,15 +408,22 @@ const AdminDashboard = () => {
                     key={request.id}
                     className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
                       selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
-                    }`}
+                    } ${request.externalOrderId ? 'border-l-4 border-l-rasti-blue' : ''}`}
                     onClick={() => handleSelectRequest(request)}
                   >
                     <p className="font-medium">{request.name}</p>
                     <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
                     <p className="text-sm text-muted-foreground">Tema: {request.storyTheme}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(request.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </p>
+                      {request.externalOrderId && (
+                        <span className="text-xs bg-rasti-blue/20 text-rasti-blue px-2 py-1 rounded-full">
+                          Importado
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
                 
@@ -264,15 +438,22 @@ const AdminDashboard = () => {
                     key={request.id}
                     className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
                       selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
-                    }`}
+                    } ${request.externalOrderId ? 'border-l-4 border-l-rasti-blue' : ''}`}
                     onClick={() => handleSelectRequest(request)}
                   >
                     <p className="font-medium">{request.name}</p>
                     <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
                     <p className="text-sm text-muted-foreground">Tema: {request.storyTheme}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(request.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </p>
+                      {request.externalOrderId && (
+                        <span className="text-xs bg-rasti-blue/20 text-rasti-blue px-2 py-1 rounded-full">
+                          Importado
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
                 
@@ -291,7 +472,7 @@ const AdminDashboard = () => {
                     key={request.id}
                     className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
                       selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
-                    }`}
+                    } ${request.externalOrderId ? 'border-l-4 border-l-rasti-blue' : ''}`}
                     onClick={() => handleSelectRequest(request)}
                   >
                     <p className="font-medium">{request.name}</p>
@@ -306,7 +487,11 @@ const AdminDashboard = () => {
                          request.status === 'payment_created' ? 'Pago creado' :
                          'Pago pendiente'}
                       </span>
-                      <span>{new Date(request.createdAt).toLocaleDateString()}</span>
+                      {request.externalOrderId && (
+                        <span className="bg-rasti-blue/20 text-rasti-blue px-2 py-0.5 rounded-full">
+                          Importado
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -326,19 +511,94 @@ const AdminDashboard = () => {
                     key={request.id}
                     className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
                       selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
-                    }`}
+                    } ${request.externalOrderId ? 'border-l-4 border-l-rasti-blue' : ''}`}
                     onClick={() => handleSelectRequest(request)}
                   >
                     <p className="font-medium">{request.name}</p>
                     <p className="text-sm text-muted-foreground">Niño/a: {request.childName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(request.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </p>
+                      {request.externalOrderId && (
+                        <span className="text-xs bg-rasti-blue/20 text-rasti-blue px-2 py-1 rounded-full">
+                          Importado
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
                 
                 {requests.filter(req => req.status === 'completed').length === 0 && (
                   <p className="text-center text-muted-foreground py-4">No hay solicitudes completadas.</p>
+                )}
+              </TabsContent>
+              
+              {/* Nueva pestaña para órdenes externas */}
+              <TabsContent value="external" className="space-y-2 max-h-[500px] overflow-y-auto">
+                <div className="mb-4">
+                  <Button 
+                    onClick={handleBatchImport} 
+                    disabled={isImporting || externalOrders.length === 0}
+                    className="w-full bg-rasti-blue hover:bg-rasti-blue/80 flex items-center justify-center gap-2"
+                  >
+                    {isImporting ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Importando...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownToLine className="w-4 h-4" />
+                        Importar todas ({externalOrders.length})
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {externalOrders.map(order => (
+                  <div
+                    key={order.id}
+                    className="p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex justify-between items-center">
+                      <p className="font-medium">{order.customerName}</p>
+                      <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                        #{order.id}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Niño/a: {order.childName}, {order.childAge} años</p>
+                    <p className="text-sm text-muted-foreground">Tema: {order.theme}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(order.orderDate), "dd 'de' MMMM, yyyy", { locale: es })}
+                    </p>
+                    <div className="mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleImportOrder(order)}
+                        className="w-full text-rasti-blue border-rasti-blue hover:bg-rasti-blue/10 flex items-center justify-center gap-1"
+                      >
+                        <FileImport className="w-3 h-3" />
+                        Importar orden
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                {externalOrders.length === 0 && (
+                  <div className="text-center text-muted-foreground py-8">
+                    <p className="mb-2">No hay órdenes externas para importar.</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={fetchExternalOrders}
+                      className="text-rasti-blue border-rasti-blue hover:bg-rasti-blue/10"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Buscar órdenes nuevas
+                    </Button>
+                  </div>
                 )}
               </TabsContent>
             </Tabs>
@@ -351,14 +611,21 @@ const AdminDashboard = () => {
             {selectedRequest ? (
               <>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold">Detalles de la Solicitud</h3>
+                  <div>
+                    <h3 className="text-xl font-bold">Detalles de la Solicitud</h3>
+                    {selectedRequest.externalOrderId && (
+                      <p className="text-sm text-muted-foreground">
+                        Importado de orden externa: #{selectedRequest.externalOrderId}
+                      </p>
+                    )}
+                  </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    selectedRequest.status === 'pending' ? 'bg-story-yellow/20 text-amber-700' :
-                    selectedRequest.status === 'options_sent' ? 'bg-story-blue/20 text-blue-700' :
+                    selectedRequest.status === 'pending' ? 'bg-rasti-yellow/20 text-amber-700' :
+                    selectedRequest.status === 'options_sent' ? 'bg-rasti-blue/20 text-rasti-blue' :
                     selectedRequest.status === 'option_selected' ? 'bg-amber-100/20 text-amber-700' :
                     selectedRequest.status === 'payment_pending' ? 'bg-purple-100/20 text-purple-700' :
                     selectedRequest.status === 'payment_created' ? 'bg-blue-100/20 text-blue-700' :
-                    'bg-story-mint/20 text-green-700'
+                    'bg-rasti-green/20 text-rasti-green'
                   }`}>
                     {selectedRequest.status === 'pending' ? 'Pendiente' :
                      selectedRequest.status === 'options_sent' ? 'Opciones Enviadas' :
@@ -400,6 +667,46 @@ const AdminDashboard = () => {
                   </div>
                 )}
                 
+                {/* Nueva sección para días de producción */}
+                {(selectedRequest.status === 'payment_created' || 
+                  selectedRequest.status === 'payment_pending' || 
+                  selectedRequest.status === 'completed') && (
+                  <div className="mb-6 p-4 border rounded-md bg-muted/30">
+                    <h4 className="text-lg font-medium mb-3">Producción</h4>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-grow">
+                        <p className="text-sm mb-1">Días hábiles de producción:</p>
+                        <Input 
+                          type="number" 
+                          min="1"
+                          max="60"
+                          value={productionDays}
+                          onChange={(e) => setProductionDays(Number(e.target.value))}
+                          className="w-full"
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleUpdateProductionDays}
+                        className="mt-5 bg-rasti-green hover:bg-rasti-green/80 text-white"
+                      >
+                        Actualizar
+                      </Button>
+                    </div>
+                    
+                    {selectedRequest.productionDays && (
+                      <div className="mt-3 text-sm text-muted-foreground">
+                        <p>
+                          Fecha estimada de entrega: {format(
+                            addBusinessDays(new Date(), selectedRequest.productionDays),
+                            "dd 'de' MMMM, yyyy", 
+                            { locale: es }
+                          )}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 {/* Formulario de opciones de trama */}
                 {selectedRequest.status === 'pending' && (
                   <div className="mt-6">
@@ -437,7 +744,7 @@ const AdminDashboard = () => {
                     </div>
                     
                     <Button 
-                      className="mt-4 w-full bg-story-blue hover:bg-story-blue/80"
+                      className="mt-4 w-full bg-rasti-blue hover:bg-rasti-blue/80"
                       onClick={handleSendOptions}
                       disabled={isSending}
                     >
@@ -486,13 +793,13 @@ const AdminDashboard = () => {
                         <div 
                           key={option.id} 
                           className={`p-4 border rounded-md ${
-                            selectedRequest.selectedPlot === option.id ? 'bg-story-mint/20 border-story-mint' : 'bg-muted/30'
+                            selectedRequest.selectedPlot === option.id ? 'bg-rasti-green/20 border-rasti-green' : 'bg-muted/30'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-medium">Opción {index + 1}: {option.title}</p>
                             {selectedRequest.selectedPlot === option.id && (
-                              <span className="px-2 py-1 bg-story-mint/30 text-xs rounded-full">
+                              <span className="px-2 py-1 bg-rasti-green/30 text-xs rounded-full">
                                 Seleccionada
                               </span>
                             )}
@@ -515,5 +822,21 @@ const AdminDashboard = () => {
     </div>
   );
 };
+
+// Función auxiliar para calcular días hábiles (excluyendo fines de semana)
+function addBusinessDays(date: Date, days: number): Date {
+  let result = new Date(date);
+  let count = 0;
+  
+  while (count < days) {
+    result.setDate(result.getDate() + 1);
+    if (result.getDay() !== 0 && result.getDay() !== 6) {
+      // No es sábado ni domingo
+      count++;
+    }
+  }
+  
+  return result;
+}
 
 export default AdminDashboard;
