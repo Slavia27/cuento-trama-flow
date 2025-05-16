@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -38,7 +37,7 @@ const StoryOptions = () => {
       const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
       const foundRequest = savedRequests.find((req: StoryRequest) => req.id === requestId);
       
-      if (foundRequest && (foundRequest.status === 'options_sent' || foundRequest.status === 'option_selected')) {
+      if (foundRequest && foundRequest.plotOptions && foundRequest.plotOptions.length > 0) {
         setRequest(foundRequest);
         if (foundRequest.selectedPlot) {
           setSelectedOption(foundRequest.selectedPlot);
@@ -49,7 +48,7 @@ const StoryOptions = () => {
         navigate('/');
         toast({
           title: "Error",
-          description: "No se encontraron opciones para esta solicitud o ya ha sido procesada.",
+          description: "No se encontraron opciones para esta solicitud.",
           variant: "destructive",
         });
       }

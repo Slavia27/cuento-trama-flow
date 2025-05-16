@@ -201,7 +201,7 @@ const AdminDashboard = () => {
     try {
       setIsResending(true);
       
-      // Enviar correo electrónico usando la función edge
+      // Enviar correo electrónico usando la función edge - Agregado el parámetro resend: true
       const { data, error } = await supabase.functions.invoke('send-plot-options', {
         body: {
           to: selectedRequest.email,
@@ -209,6 +209,7 @@ const AdminDashboard = () => {
           childName: selectedRequest.childName,
           requestId: selectedRequest.id,
           plotOptions: selectedRequest.plotOptions,
+          resend: true // Indicamos que es un reenvío
         }
       });
 
@@ -567,9 +568,9 @@ const AdminDashboard = () => {
                               </DialogDescription>
                             </DialogHeader>
                             <DialogFooter>
-                              <Button variant="outline" onClick={(e) => e.stopPropagation()}>
-                                Cancelar
-                              </Button>
+                              <DialogClose asChild>
+                                <Button variant="outline">Cancelar</Button>
+                              </DialogClose>
                               <Button 
                                 variant="destructive" 
                                 onClick={(e) => {
