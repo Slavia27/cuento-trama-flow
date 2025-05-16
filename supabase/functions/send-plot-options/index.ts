@@ -5,13 +5,13 @@ import { Resend } from "npm:resend@2.0.0";
 // Inicializar Resend con la API key desde las variables de entorno
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
-// Verificamos que la API key exista antes de inicializar
+// Verificamos que la API key exista
 if (!resendApiKey) {
   console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
 }
 
-// Inicializamos Resend solo si tenemos una API key
-const resend = resendApiKey ? new Resend(resendApiKey) : null;
+// Inicializamos Resend directamente
+const resend = new Resend(resendApiKey);
 
 // Definir headers CORS para permitir solicitudes desde el navegador
 const corsHeaders = {
@@ -42,8 +42,8 @@ serve(async (req) => {
 
   try {
     // Verificar que la API key de Resend esté configurada
-    if (!resendApiKey || !resend) {
-      throw new Error("RESEND_API_KEY no está configurada o es inválida. Por favor, añade este secreto en la configuración de funciones de Supabase.");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY no está configurada. Por favor, añade este secreto en la configuración de funciones de Supabase.");
     }
 
     console.log("Recibiendo solicitud para enviar opciones de trama");
@@ -70,6 +70,7 @@ serve(async (req) => {
     const selectionUrl = `${req.headers.get("origin") || "https://tu-sitio-web.com"}/opciones/${requestId}`;
     
     console.log("Generando contenido del correo");
+    console.log("URL de selección:", selectionUrl);
     
     // Enviar el correo usando Resend
     const emailResponse = await resend.emails.send({
@@ -107,7 +108,13 @@ serve(async (req) => {
       `,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email attempt response:", emailResponse);
+    
+    // Verificar si hay errores en la respuesta de Resend
+    if (emailResponse.error) {
+      console.error("Error al enviar el correo:", emailResponse.error);
+      throw new Error(`Error al enviar el correo: ${emailResponse.error.message}`);
+    }
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,

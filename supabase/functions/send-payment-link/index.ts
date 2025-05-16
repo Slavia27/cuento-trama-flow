@@ -4,6 +4,13 @@ import { Resend } from "npm:resend@2.0.0";
 
 // Inicializar Resend con la API key desde las variables de entorno
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
+
+// Verificamos que la API key exista
+if (!resendApiKey) {
+  console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
+}
+
+// Inicializamos Resend directamente
 const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
@@ -82,7 +89,13 @@ serve(async (req) => {
       `,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email attempt response:", emailResponse);
+    
+    // Verificar si hay errores en la respuesta de Resend
+    if (emailResponse.error) {
+      console.error("Error al enviar el correo:", emailResponse.error);
+      throw new Error(`Error al enviar el correo: ${emailResponse.error.message}`);
+    }
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
