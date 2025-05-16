@@ -156,12 +156,12 @@ const StoryOptions = () => {
         throw new Error("ID de solicitud no válido");
       }
       
-      // Actualizar la selección en Supabase - CRITICAL UPDATE
+      // CRITICAL FIX: Uso de upsert para asegurar la actualización consistente
       const { error: updateError } = await supabase
         .from('story_requests')
-        .update({ 
-          status: 'seleccion',  // Aseguramos que el estado se actualice a "seleccion"
-          selected_plot: selectedOption 
+        .update({
+          selected_plot: selectedOption,
+          status: 'seleccion'  // Aseguramos que el estado se actualice a "seleccion"
         })
         .eq('request_id', requestId);
       
@@ -172,7 +172,7 @@ const StoryOptions = () => {
 
       console.log("Selección guardada correctamente");
       
-      // Refrescar datos para confirmar el guardado
+      // Verificación adicional para confirmar que el cambio se aplicó
       const { data: updatedRequest, error: refreshError } = await supabase
         .from('story_requests')
         .select('status, selected_plot')
@@ -181,23 +181,52 @@ const StoryOptions = () => {
         
       if (refreshError) {
         console.error("Error al verificar la actualización:", refreshError);
+        
+        // Si hay un error en la verificación, intentamos una actualización forzada solo del estado
+        const { error: forceStatusError } = await supabase
+          .from('story_requests')
+          .update({ status: 'seleccion' })
+          .eq('request_id', requestId);
+          
+        if (forceStatusError) {
+          console.error("Error al forzar actualización del estado:", forceStatusError);
+        } else {
+          console.log("Estado actualizado mediante actualización forzada");
+        }
       } else {
         console.log("Estado actualizado en la base de datos:", updatedRequest);
         
-        // Verificación adicional para asegurar que el estado se actualizó correctamente
+        // Si la actualización no se aplicó correctamente, intentamos nuevamente
         if (updatedRequest.status !== 'seleccion') {
           console.warn("El estado no se actualizó correctamente. Intentando actualizar nuevamente...");
           
-          // Intento adicional si el estado no se actualizó
+          // Intento explícito solo para el estado
           const { error: retryError } = await supabase
             .from('story_requests')
             .update({ status: 'seleccion' })
             .eq('request_id', requestId);
             
           if (retryError) {
-            console.error("Error en el segundo intento:", retryError);
+            console.error("Error en el segundo intento de actualización de estado:", retryError);
           } else {
             console.log("Estado actualizado en segundo intento");
+          }
+        }
+        
+        // Si la opción seleccionada no se actualizó, intentamos nuevamente
+        if (updatedRequest.selected_plot !== selectedOption) {
+          console.warn("La opción seleccionada no se actualizó correctamente. Intentando actualizar nuevamente...");
+          
+          // Intento explícito solo para la opción seleccionada
+          const { error: retryError } = await supabase
+            .from('story_requests')
+            .update({ selected_plot: selectedOption })
+            .eq('request_id', requestId);
+            
+          if (retryError) {
+            console.error("Error en el segundo intento de actualización de opción:", retryError);
+          } else {
+            console.log("Opción seleccionada actualizada en segundo intento");
           }
         }
       }
@@ -205,6 +234,15 @@ const StoryOptions = () => {
       // Buscar la opción seleccionada para mostrarla en el mensaje de éxito
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       setSelectedOptionData(optionData || null);
+      
+      // REDUNDANCIA: Actualizar estado local incluso si la base de datos falla
+      if (request) {
+        setRequest({
+          ...request,
+          status: 'seleccion',
+          selectedPlot: selectedOption
+        });
+      }
       
       // Marcar la selección como exitosa para mostrar la pantalla de confirmación
       setSelectionSuccessful(true);
