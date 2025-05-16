@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Loader2 } from 'lucide-react';
 
 type StoryOption = {
   id: string;
@@ -39,8 +40,15 @@ const StoryOptions = () => {
   useEffect(() => {
     const loadRequest = () => {
       try {
+        if (!requestId) {
+          setError("ID de solicitud no válido");
+          setLoading(false);
+          return;
+        }
+
         const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
         console.log("All saved requests:", savedRequests);
+        console.log("Looking for request ID:", requestId);
         
         const foundRequest = savedRequests.find((req: StoryRequest) => req.id === requestId);
         console.log("Found request:", foundRequest);
@@ -48,7 +56,8 @@ const StoryOptions = () => {
         if (foundRequest) {
           // Make sure plotOptions exists and has items
           if (!foundRequest.plotOptions || foundRequest.plotOptions.length === 0) {
-            setError("No se encontraron opciones de trama para esta solicitud.");
+            console.log("Request found but has no plot options");
+            setError("No se encontraron opciones de trama para esta solicitud. Es posible que el administrador aún no haya generado las opciones.");
             setLoading(false);
             return;
           }
@@ -58,8 +67,9 @@ const StoryOptions = () => {
             setSelectedOption(foundRequest.selectedPlot);
           }
         } else {
-          // If request not found, show error and don't redirect yet
-          setError("No se encontró la solicitud.");
+          // If request not found, show error
+          console.log("Request not found in localStorage");
+          setError("No se encontró la solicitud. Verifica el enlace e intenta nuevamente.");
           toast({
             title: "Error",
             description: "No se encontró la solicitud especificada.",
@@ -100,6 +110,8 @@ const StoryOptions = () => {
     }
     
     try {
+      if (!requestId) return;
+      
       // En una implementación real, aquí enviarías la selección al backend
       // Por ahora, solo actualizamos en localStorage
       console.log("Saving selection:", selectedOption);
@@ -147,7 +159,10 @@ const StoryOptions = () => {
   if (loading) {
     return (
       <div className="container py-12 text-center">
-        <p>Cargando opciones...</p>
+        <div className="flex flex-col items-center justify-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-rasti-blue" />
+          <p>Cargando opciones...</p>
+        </div>
       </div>
     );
   }
