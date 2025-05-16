@@ -48,13 +48,6 @@ serve(async (req) => {
     console.log(`Enviando correo a: ${to} para el pago del cuento de ${childName}`);
     console.log(`Opción seleccionada: ${optionTitle} (${optionId})`);
     
-    // Modificar correos de ejemplo para usar el dominio permitido por Resend
-    let toEmail = to;
-    if (to.includes("example.com")) {
-      toEmail = "delivered@resend.dev"; // Usar la dirección de prueba oficial de Resend
-      console.log("Se detectó correo de ejemplo, usando dirección de prueba de Resend:", toEmail);
-    }
-    
     // Construir URL de pago con todos los parámetros necesarios como query params
     const origin = req.headers.get("origin") || "https://tu-sitio-web.com";
     const paymentUrl = `${origin}/pagar?requestId=${requestId}&optionId=${optionId}&optionTitle=${encodeURIComponent(optionTitle)}`;
@@ -63,7 +56,7 @@ serve(async (req) => {
     
     const emailResponse = await resend.emails.send({
       from: "Cuentos Personalizados <notificaciones@rasti.cl>", 
-      to: [toEmail],
+      to: [to],
       subject: `Completa tu pago para el cuento de ${childName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
