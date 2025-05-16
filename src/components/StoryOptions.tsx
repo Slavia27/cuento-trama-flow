@@ -88,7 +88,7 @@ const StoryOptions = () => {
         if (req.id === requestId) {
           return {
             ...req,
-            status: 'option_selected',
+            status: 'seleccion',
             selectedPlot: selectedOption,
           };
         }
