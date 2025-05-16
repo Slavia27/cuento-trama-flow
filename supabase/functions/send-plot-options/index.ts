@@ -8,7 +8,7 @@ if (!resendApiKey) {
   console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
 }
 
-// Inicializar Resend directamente
+// Inicializar Resend con validación 
 const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
@@ -69,6 +69,10 @@ serve(async (req) => {
     
     console.log("Generando contenido del correo");
     console.log("URL de selección:", selectionUrl);
+    
+    // Verificar formato de correo para propósitos de depuración
+    console.log("Correo destino:", to);
+    console.log("Remitente:", "Cuentos Personalizados <notificaciones@rasti.cl>");
     
     // Enviar el correo usando Resend
     const emailResponse = await resend.emails.send({

@@ -8,7 +8,7 @@ if (!resendApiKey) {
   console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
 }
 
-// Inicializamos Resend directamente
+// Inicializamos Resend con validación
 const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
@@ -53,6 +53,10 @@ serve(async (req) => {
     const paymentUrl = `${origin}/pagar?requestId=${requestId}&optionId=${optionId}&optionTitle=${encodeURIComponent(optionTitle)}`;
     
     console.log("URL de pago generada:", paymentUrl);
+    
+    // Verificar formato de correo para propósitos de depuración
+    console.log("Correo destino:", to);
+    console.log("Remitente:", "Cuentos Personalizados <notificaciones@rasti.cl>");
     
     const emailResponse = await resend.emails.send({
       from: "Cuentos Personalizados <notificaciones@rasti.cl>", 
