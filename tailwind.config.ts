@@ -65,10 +65,10 @@ export default {
 				},
 				// Colores temáticos inspirados en Rasti.cl
 				rasti: {
-					'red': '#E42528',
-					'yellow': '#FDC300',
-					'blue': '#0091D7',
-					'green': '#49B675',
+					'red': '##E79182',
+					'yellow': '#E7D56F',
+					'blue': '#CF749D',
+					'green': '#309AAC',
 					'black': '#000000',
 					'white': '#FFFFFF',
 					'gray': '#F5F5F5',
