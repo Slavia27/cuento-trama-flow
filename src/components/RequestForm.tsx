@@ -653,7 +653,7 @@ const RequestForm = () => {
               />
             </div>
             
-            <div className="pt-6 sticky bottom-0 bg-white pb-2">
+            <div className="pt-6 bg-white">
               <Button 
                 type="submit" 
                 className="w-full bg-story-blue hover:bg-story-blue/80 text-lg py-6" 
