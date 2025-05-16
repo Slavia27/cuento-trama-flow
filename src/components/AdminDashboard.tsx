@@ -41,6 +41,8 @@ type FormData = {
   temasEvitar: string;
 };
 
+type StoryStatus = 'pendiente' | 'opciones' | 'seleccion' | 'pagado' | 'produccion' | 'envio' | 'completado';
+
 type StoryRequest = {
   id: string;
   name: string;
@@ -50,7 +52,7 @@ type StoryRequest = {
   storyTheme: string;
   specialInterests: string;
   additionalDetails?: string;
-  status: 'pendiente' | 'opciones' | 'seleccion' | 'pagado' | 'produccion' | 'envio' | 'completado';
+  status: StoryStatus;
   createdAt: string;
   plotOptions?: { id: string; title: string; description: string }[];
   selectedPlot?: string;
@@ -98,7 +100,8 @@ const AdminDashboard = () => {
           }
           // If it's already using the new status values, keep them
           else if (['pendiente', 'opciones', 'seleccion', 'pagado', 'produccion', 'envio', 'completado'].includes(req.status)) {
-            typedRequest.status = req.status;
+            // Make sure to cast it to StoryStatus type for type safety
+            typedRequest.status = req.status as StoryStatus;
           }
           // Default fallback
           else {
@@ -214,7 +217,7 @@ const AdminDashboard = () => {
         if (req.id === selectedRequest.id) {
           return {
             ...req,
-            status: 'opciones',
+            status: 'opciones' as StoryStatus,
             plotOptions: optionsWithIds,
           };
         }
@@ -315,8 +318,8 @@ const AdminDashboard = () => {
         if (req.id === selectedRequest.id) {
           return {
             ...req,
-            status: 'pagado',
-          } as StoryRequest;
+            status: 'pagado' as StoryStatus,
+          };
         }
         return req;
       });
@@ -343,7 +346,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUpdateProductionState = (newState: 'produccion' | 'envio' | 'completado') => {
+  const handleUpdateProductionState = (newState: StoryStatus) => {
     if (!selectedRequest) return;
     
     // Actualizar el estado de la solicitud
@@ -352,7 +355,7 @@ const AdminDashboard = () => {
         return {
           ...req,
           status: newState,
-        } as StoryRequest;
+        };
       }
       return req;
     });
@@ -361,7 +364,7 @@ const AdminDashboard = () => {
     setSelectedRequest(prev => prev ? {
       ...prev,
       status: newState,
-    } as StoryRequest : null);
+    } : null);
     
     const statusLabels = {
       'produccion': 'Producción',

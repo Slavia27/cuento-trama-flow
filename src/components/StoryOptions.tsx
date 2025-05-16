@@ -15,11 +15,13 @@ type StoryOption = {
   description: string;
 };
 
+type StoryStatus = 'pendiente' | 'opciones' | 'seleccion' | 'pagado' | 'produccion' | 'envio' | 'completado';
+
 type StoryRequest = {
   id: string;
   name: string;
   childName: string;
-  status: 'pendiente' | 'opciones' | 'seleccion' | 'pagado' | 'produccion' | 'envio' | 'completado';
+  status: StoryStatus;
   plotOptions?: StoryOption[];
   selectedPlot?: string;
 };
@@ -107,7 +109,7 @@ const StoryOptions = () => {
         if (req.id === requestId) {
           return {
             ...req,
-            status: 'seleccion',
+            status: 'seleccion' as StoryStatus,
             selectedPlot: selectedOption,
           };
         }
@@ -185,7 +187,7 @@ const StoryOptions = () => {
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-3">Opciones de Trama</h1>
         <p className="text-muted-foreground">
-          Hola {request.name}, estas son las opciones que hemos creado especialmente para {request.childName}.
+          Hola {request?.name}, estas son las opciones que hemos creado especialmente para {request?.childName}.
           Por favor, selecciona la que más te guste.
         </p>
       </div>
@@ -202,7 +204,7 @@ const StoryOptions = () => {
         onValueChange={handleOptionSelect}
         className="space-y-6 mb-8"
       >
-        {request.plotOptions?.map((option) => (
+        {request?.plotOptions?.map((option) => (
           <Card
             key={option.id}
             className={`p-6 cursor-pointer transition-all duration-300 ${
