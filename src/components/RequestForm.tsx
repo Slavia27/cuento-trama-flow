@@ -8,35 +8,84 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 
+const goalItems = [
+  {
+    id: "manejar-emociones",
+    label: "Ayudarlo/a a manejar sus emociones",
+  },
+  {
+    id: "reforzar-confianza",
+    label: "Reforzar su confianza",
+  },
+  {
+    id: "reflexion",
+    label: "Ofrecerle un espacio seguro para reflexionar",
+  },
+  {
+    id: "conexion-emocional",
+    label: "Generar una conexión emocional",
+  },
+  {
+    id: "dialogar",
+    label: "Dar espacio para dialogar",
+  },
+  {
+    id: "desarrollo-habilidades",
+    label: "Fomentar el desarrollo de habilidades",
+  },
+  {
+    id: "otras-perspectivas",
+    label: "Mostrarle otras perspectivas de la situación para que se sienta representado",
+  },
+];
+
 const formSchema = z.object({
-  // Información personal
-  parentName: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }),
-  parentEmail: z.string().email({ message: 'Por favor ingresa un correo electrónico válido.' }),
-  parentPhone: z.string().min(9, { message: 'El teléfono debe tener al menos 9 dígitos.' }),
+  // Información básica
+  codigoPedido: z.string().min(1, { message: 'El código de pedido es requerido.' }),
+  nombreCompleto: z.string().min(1, { message: 'El nombre completo es requerido.' }),
+  nombreHijo: z.string().min(1, { message: 'El nombre del hijo/a es requerido.' }),
+  edadHijo: z.string().min(1, { message: 'La edad es requerida.' }),
+  conQuienVive: z.string().min(1, { message: 'Este campo es requerido.' }),
+  personalidadHijo: z.string().min(1, { message: 'Este campo es requerido.' }),
   
-  // Información del niño
-  childName: z.string().min(2, { message: 'El nombre del niño/a debe tener al menos 2 caracteres.' }),
-  childAge: z.string().min(1, { message: 'Por favor indica la edad del niño/a.' }),
-  childGender: z.string().min(1, { message: 'Por favor selecciona el género del niño/a.' }),
+  // Contexto familiar
+  dinamicaFamiliar: z.string().min(1, { message: 'Este campo es requerido.' }),
+  cambiosRecientes: z.string().min(1, { message: 'Este campo es requerido.' }),
   
-  // Detalles del cuento
-  storyType: z.string().min(1, { message: 'Por favor selecciona el tipo de cuento.' }),
-  specialInterests: z.string().min(1, { message: 'Por favor indica los intereses especiales del niño/a.' }),
-  additionalCharacters: z.string().optional(),
-  personalCharacteristics: z.string().min(1, { message: 'Por favor indica las características personales del niño/a.' }),
+  // Situación actual
+  situacionTrabajo: z.string().min(1, { message: 'Este campo es requerido.' }),
+  cuandoOcurre: z.string().min(1, { message: 'Este campo es requerido.' }),
+  porQueOcurre: z.string().min(1, { message: 'Este campo es requerido.' }),
+  aquienAfecta: z.string().min(1, { message: 'Este campo es requerido.' }),
   
-  // Información de entrega
-  deliveryAddress: z.string().min(5, { message: 'Por favor ingresa una dirección de entrega válida.' }),
-  commune: z.string().min(2, { message: 'Por favor ingresa la comuna de entrega.' }),
-  region: z.string().min(2, { message: 'Por favor ingresa la región de entrega.' }),
+  // Desafíos identificados
+  preocupacionPadres: z.string().min(1, { message: 'Este campo es requerido.' }),
+  aspectosDificiles: z.string().min(1, { message: 'Este campo es requerido.' }),
+  conductaHijo: z.string().min(1, { message: 'Este campo es requerido.' }),
   
-  // Adicionales
-  giftMessage: z.string().optional(),
-  additionalDetails: z.string().optional(),
+  // Acciones intentadas
+  accionesIntentadas: z.string().min(1, { message: 'Este campo es requerido.' }),
+  resultadosAcciones: z.string().min(1, { message: 'Este campo es requerido.' }),
+  enseñanzaHistoria: z.string().min(1, { message: 'Este campo es requerido.' }),
+  
+  // Objetivos
+  objetivos: z.array(z.string()).refine((value) => value.length > 0, {
+    message: "Debes seleccionar al menos un objetivo",
+  }),
+  otrosObjetivos: z.string().optional(),
+  
+  // Personalización
+  rutinaHijo: z.string().min(1, { message: 'Este campo es requerido.' }),
+  interesesHijo: z.string().min(1, { message: 'Este campo es requerido.' }),
+  cosasNoLeGustan: z.string().min(1, { message: 'Este campo es requerido.' }),
+  tradicionesValores: z.string().min(1, { message: 'Este campo es requerido.' }),
+  expresionesFamiliares: z.string().min(1, { message: 'Este campo es requerido.' }),
+  
+  // Otros
+  temasEvitar: z.string().min(1, { message: 'Este campo es requerido.' }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,21 +98,32 @@ const RequestForm = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      parentName: '',
-      parentEmail: '',
-      parentPhone: '',
-      childName: '',
-      childAge: '',
-      childGender: '',
-      storyType: '',
-      specialInterests: '',
-      additionalCharacters: '',
-      personalCharacteristics: '',
-      deliveryAddress: '',
-      commune: '',
-      region: '',
-      giftMessage: '',
-      additionalDetails: '',
+      codigoPedido: '',
+      nombreCompleto: '',
+      nombreHijo: '',
+      edadHijo: '',
+      conQuienVive: '',
+      personalidadHijo: '',
+      dinamicaFamiliar: '',
+      cambiosRecientes: '',
+      situacionTrabajo: '',
+      cuandoOcurre: '',
+      porQueOcurre: '',
+      aquienAfecta: '',
+      preocupacionPadres: '',
+      aspectosDificiles: '',
+      conductaHijo: '',
+      accionesIntentadas: '',
+      resultadosAcciones: '',
+      enseñanzaHistoria: '',
+      objetivos: [],
+      otrosObjetivos: '',
+      rutinaHijo: '',
+      interesesHijo: '',
+      cosasNoLeGustan: '',
+      tradicionesValores: '',
+      expresionesFamiliares: '',
+      temasEvitar: '',
     },
   });
   
@@ -71,7 +131,6 @@ const RequestForm = () => {
     setIsSubmitting(true);
     
     try {
-      // En una implementación real, aquí enviarías los datos a tu backend o servicio
       console.log('Datos del formulario:', data);
       
       // Simulamos un tiempo de respuesta
@@ -86,21 +145,7 @@ const RequestForm = () => {
       const requests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
       const newRequest = {
         id: Date.now().toString(),
-        name: data.parentName,
-        email: data.parentEmail,
-        phone: data.parentPhone,
-        childName: data.childName,
-        childAge: data.childAge,
-        childGender: data.childGender,
-        storyType: data.storyType,
-        specialInterests: data.specialInterests,
-        additionalCharacters: data.additionalCharacters,
-        personalCharacteristics: data.personalCharacteristics,
-        deliveryAddress: data.deliveryAddress,
-        commune: data.commune,
-        region: data.region,
-        giftMessage: data.giftMessage,
-        additionalDetails: data.additionalDetails,
+        ...data,
         status: 'pending',
         createdAt: new Date().toISOString(),
       };
@@ -121,289 +166,25 @@ const RequestForm = () => {
   };
   
   return (
-    <div className="container py-12 max-w-3xl">
-      <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold mb-3">Solicitud de Cuento Personalizado</h1>
-        <p className="text-muted-foreground">
-          Completa el siguiente formulario para comenzar el proceso de creación de tu cuento personalizado.
-        </p>
-      </div>
-      
+    <div className="container py-8 max-w-4xl">
       <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Información básica */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold border-b pb-2">Información del Solicitante</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="parentName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre Completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Tu nombre completo" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="parentEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Correo Electrónico</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="tu@email.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="parentPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Teléfono de Contacto</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Tu número de teléfono" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold border-b pb-2">Información del Niño/a</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="childName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre del Niño/a</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nombre del niño/a" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="childAge"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Edad del Niño/a</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Edad" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="childGender"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Género del Niño/a</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="niña" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Niña</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="niño" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Niño</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="otro" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Otro</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold border-b pb-2">Detalles para el Cuento</h2>
+              <h2 className="text-xl font-semibold border-b pb-2">Información Básica</h2>
               
               <FormField
                 control={form.control}
-                name="storyType"
+                name="codigoPedido"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Cuento</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un tipo de cuento" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="aventuras">Aventuras</SelectItem>
-                        <SelectItem value="fantasia">Fantasía</SelectItem>
-                        <SelectItem value="amistad">Amistad y Valores</SelectItem>
-                        <SelectItem value="espacial">Espacial</SelectItem>
-                        <SelectItem value="princesas">Princesas</SelectItem>
-                        <SelectItem value="superheroes">Superhéroes</SelectItem>
-                        <SelectItem value="piratas">Piratas</SelectItem>
-                        <SelectItem value="animales">Animales</SelectItem>
-                        <SelectItem value="navidad">Navidad</SelectItem>
-                        <SelectItem value="otro">Otro (especificar en detalles adicionales)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="specialInterests"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Intereses Especiales del Niño/a</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="¿Qué le gusta al niño/a? ¿Tiene personajes o temas favoritos?"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="additionalCharacters"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Personajes Adicionales (Opcional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="¿Quieres incluir hermanos, mascotas u otros personajes en el cuento?"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
+                    <FormLabel>1. Código de pedido *</FormLabel>
                     <FormDescription>
-                      Puedes incluir nombres y características de hermanos, mascotas u otros personas importantes.
+                      Busca el código de pedido en el correo de confirmación de compra y regístralo a continuación.
                     </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="personalCharacteristics"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Características Personales</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="Describe la personalidad, apariencia y características especiales del niño/a"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold border-b pb-2">Información de Entrega</h2>
-              <div className="grid grid-cols-1 gap-6">
-                <FormField
-                  control={form.control}
-                  name="deliveryAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dirección de Entrega</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Dirección completa" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="commune"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Comuna</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Comuna" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="region"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Región</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Región" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold border-b pb-2">Información Adicional</h2>
-              
-              <FormField
-                control={form.control}
-                name="giftMessage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mensaje de Regalo (Opcional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Si es un regalo, puedes incluir un mensaje especial"
-                        className="min-h-[80px]"
-                        {...field}
-                      />
+                      <Input placeholder="Código de pedido" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -412,16 +193,451 @@ const RequestForm = () => {
               
               <FormField
                 control={form.control}
-                name="additionalDetails"
+                name="nombreCompleto"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Detalles Adicionales (Opcional)</FormLabel>
+                    <FormLabel>2. Nombre completo de quién completa el formulario *</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="¿Hay algo más que quieras contarnos para personalizar mejor el cuento?"
-                        className="min-h-[80px]"
-                        {...field}
+                      <Input placeholder="Tu nombre completo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="nombreHijo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>3. ¿Cómo se llama tu hijo o hija? *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nombre del niño/a" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="edadHijo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>4. ¿Qué edad tiene? *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Edad" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="conQuienVive"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>5. ¿Con quién vive? *</FormLabel>
+                    <FormDescription>
+                      Ambos padres, un padre/madre, otros personas significativas
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe con quién vive" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="personalidadHijo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>6. ¿Cómo describirías brevemente la personalidad de tu hijo? *</FormLabel>
+                    <FormDescription>
+                      Esta pregunta proporciona contexto valioso para la caracterización de personajes con los que el niño pueda identificarse
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe la personalidad" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Contexto Familiar */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold border-b pb-2">Contexto Familiar</h2>
+              
+              <FormField
+                control={form.control}
+                name="dinamicaFamiliar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>7. Cuéntame un poco sobre tu familia: ¿Cómo es la dinámica familiar? ¿Algún aspecto relevante a mencionar? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe la dinámica familiar" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="cambiosRecientes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>8. ¿Algún cambio importante en la vida de tu hijo recientemente? *</FormLabel>
+                    <FormDescription>
+                      Ej. mudanza, llegada de un hermano, cambio de colegio, otros
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe cambios importantes recientes" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Situación Actual */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold border-b pb-2">Situación Actual</h2>
+              
+              <FormField
+                control={form.control}
+                name="situacionTrabajo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>9. ¿Qué situación estás enfrentando que te gustaría trabajar con esta historia? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe la situación" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="cuandoOcurre"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>10. ¿Cuándo ocurre? *</FormLabel>
+                    <FormDescription>
+                      Momentos del día, situaciones particulares, con alguna persona o contexto en específico
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe cuándo ocurre la situación" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="porQueOcurre"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>11. ¿Por qué crees que podría estar ocurriendo? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe posibles razones" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="aquienAfecta"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>12. Además del niño, ¿A quién afecta esta situación? *</FormLabel>
+                    <FormDescription>
+                      Padres, cuidadores, colegios, otros
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe a quién afecta" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Desafíos Identificados */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold border-b pb-2">Desafíos Identificados</h2>
+              
+              <FormField
+                control={form.control}
+                name="preocupacionPadres"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>13. ¿Qué es lo que a uds como padres les cuesta o preocupa de esta situación? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe preocupaciones" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="aspectosDificiles"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>14. ¿Qué aspectos de esta situación han sido más difíciles para tu hijo/a? *</FormLabel>
+                    <FormDescription>
+                      Emociones fuertes, dificultades para comunicarse, falta de herramientas para manejarlo, otro
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe aspectos difíciles" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="conductaHijo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>15. ¿Cuál es la conducta de tu hijo frente a esto? *</FormLabel>
+                    <FormDescription>
+                      Ej. Se siente frustrado, se aísla, tiene reacciones intensas
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe la conducta" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Acciones Intentadas */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold border-b pb-2">Acciones Intentadas</h2>
+              
+              <FormField
+                control={form.control}
+                name="accionesIntentadas"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>16. ¿Qué has intentado hacer para abordar esta situación hasta ahora? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe acciones intentadas" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="resultadosAcciones"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>17. ¿Hay algo que haya funcionado bien? ¿Qué crees que no ha dado resultado? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe resultados" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="enseñanzaHistoria"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>18. ¿Qué te gustaría que la historia le enseñara o mostrara a tu hijo? *</FormLabel>
+                    <FormDescription>
+                      Ej Manejar emociones, resolver conflictos, adaptarse a cambios, entender una situación, otro.
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe lo que quieres que aprenda" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Objetivos */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold border-b pb-2">Objetivos</h2>
+              
+              <FormField
+                control={form.control}
+                name="objetivos"
+                render={() => (
+                  <FormItem>
+                    <div className="mb-4">
+                      <FormLabel>19. ¿Qué esperas lograr con este cuento personalizado? *</FormLabel>
+                      <FormDescription>
+                        Te recordamos que los cuentos Rasti son un recurso que permite dialogar, conectar,
+                      </FormDescription>
+                    </div>
+                    {goalItems.map((item) => (
+                      <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="objetivos"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={item.id}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...field.value, item.id])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== item.id
+                                          )
+                                        )
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                {item.label}
+                              </FormLabel>
+                            </FormItem>
+                          )
+                        }}
                       />
+                    ))}
+                    <div className="pt-2">
+                      <FormField
+                        control={form.control}
+                        name="otrosObjetivos"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Otros:</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Otros objetivos" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Personalización */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold border-b pb-2">Personalización</h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Las siguientes preguntas están orientadas a recabar información relevante para la personalización 
+                del cuento de tal manera de encontrar atributos relevantes que permitan generar interés en el niño 
+                y también lograr el proceso de identificación con los personajes del cuento.
+              </p>
+              
+              <FormField
+                control={form.control}
+                name="rutinaHijo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>20. ¿Cuáles son los momentos más importantes de la rutina de tu hijo? ¿Qué cosas crees que son claves en su día a día que puedan ser representadas en el cuento? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe rutina e intereses importantes" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="interesesHijo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>21. ¿Cuáles son sus intereses o cosas que lo hacen vibrar? *</FormLabel>
+                    <FormDescription>
+                      Actividades, colores, animales, juegos, lugares, etc
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea placeholder="Describe intereses" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="cosasNoLeGustan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>22. ¿Qué cosas no le gustan? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe lo que no le gusta" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="tradicionesValores"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>23. ¿Hay tradiciones, valores o creencias familiares importantes que les gustaría ver reflejados en el cuento? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe tradiciones y valores" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="expresionesFamiliares"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>24. ¿Existen expresiones, canciones o dichos que son significativos en su familia? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe expresiones significativas" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Otros */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold border-b pb-2">Otros</h2>
+              
+              <FormField
+                control={form.control}
+                name="temasEvitar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>25. ¿Hay algún tema o situación que preferirías evitar en el cuento? *</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe temas a evitar" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
