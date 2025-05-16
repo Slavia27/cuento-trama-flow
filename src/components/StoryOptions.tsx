@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -6,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 type StoryOption = {
   id: string;
@@ -164,8 +166,8 @@ const StoryOptions = () => {
             key={option.id}
             className={`p-6 cursor-pointer transition-all duration-300 ${
               selectedOption === option.id
-                ? 'border-story-blue border-2 shadow-md'
-                : 'hover:border-story-blue/50 hover:shadow-md'
+                ? 'border-rasti-blue border-2 shadow-md'
+                : 'hover:border-rasti-blue/50 hover:shadow-md'
             }`}
           >
             <div className="flex items-start gap-4">
@@ -186,7 +188,7 @@ const StoryOptions = () => {
       
       <div className="flex justify-center">
         <Button
-          className="bg-story-blue hover:bg-story-blue/80 px-8"
+          className="bg-rasti-blue hover:bg-rasti-blue/80 text-white px-8"
           onClick={handleConfirmSelection}
           disabled={!selectedOption}
         >
