@@ -36,7 +36,7 @@ const StoryOptions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Cargar solicitud y opciones desde localStorage
+  // Cargar solicitud y opciones desde Supabase
   useEffect(() => {
     const loadRequest = async () => {
       setLoading(true);
@@ -48,31 +48,59 @@ const StoryOptions = () => {
           return;
         }
 
-        // Obtener todas las solicitudes guardadas
-        const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-        console.log("Solicitudes guardadas:", savedRequests);
+        // Obtener la solicitud de Supabase
+        const { data: requestData, error: requestError } = await supabase
+          .from('story_requests')
+          .select('*')
+          .eq('request_id', requestId)
+          .single();
         
-        // Buscar la solicitud específica
-        const foundRequest = savedRequests.find((req: StoryRequest) => req.id === requestId);
-        console.log("Solicitud encontrada:", foundRequest);
-        
-        if (foundRequest) {
-          // Si se encuentra la solicitud pero no tiene opciones de trama
-          if (!foundRequest.plotOptions || foundRequest.plotOptions.length === 0) {
-            console.log("La solicitud no tiene opciones de trama configuradas");
-            setError("Esta solicitud no tiene opciones de trama configuradas aún. Por favor, contacta al administrador.");
-          } else {
-            console.log("Cargando solicitud con opciones:", foundRequest);
-            setRequest(foundRequest);
-            if (foundRequest.selectedPlot) {
-              setSelectedOption(foundRequest.selectedPlot);
-            }
-          }
-        } else {
-          // Si no se encuentra la solicitud, mostrar un mensaje de error claro
-          console.log("No se encontró la solicitud con ID:", requestId);
+        if (requestError || !requestData) {
+          console.error("Error al obtener la solicitud:", requestError);
           setError("No se encontró la solicitud. Verifica el enlace e intenta nuevamente.");
+          setLoading(false);
+          return;
         }
+
+        // Obtener las opciones de trama para esta solicitud
+        const { data: optionsData, error: optionsError } = await supabase
+          .from('plot_options')
+          .select('*')
+          .eq('request_id', requestId);
+        
+        if (optionsError) {
+          console.error("Error al obtener las opciones de trama:", optionsError);
+          setError("Error al cargar las opciones de trama. Por favor intente nuevamente.");
+          setLoading(false);
+          return;
+        }
+
+        // Formatear los datos para el componente
+        const formattedRequest: StoryRequest = {
+          id: requestData.request_id,
+          name: requestData.name,
+          childName: requestData.child_name,
+          status: requestData.status as StoryStatus,
+          selectedPlot: requestData.selected_plot || null,
+          plotOptions: optionsData && optionsData.length > 0 
+            ? optionsData.map(opt => ({
+                id: opt.option_id,
+                title: opt.title,
+                description: opt.description
+              }))
+            : []
+        };
+        
+        setRequest(formattedRequest);
+        
+        if (formattedRequest.selectedPlot) {
+          setSelectedOption(formattedRequest.selectedPlot);
+        }
+        
+        if (formattedRequest.plotOptions?.length === 0) {
+          setError("Esta solicitud no tiene opciones de trama configuradas aún. Por favor, contacta al administrador.");
+        }
+        
       } catch (err) {
         console.error("Error al cargar la solicitud:", err);
         setError("Error al cargar la solicitud. Por favor intente nuevamente.");
@@ -95,7 +123,7 @@ const StoryOptions = () => {
     setError(null);
   };
   
-  const handleConfirmSelection = () => {
+  const handleConfirmSelection = async () => {
     if (!selectedOption) {
       setError("Por favor selecciona una opción antes de continuar.");
       toast({
@@ -109,23 +137,18 @@ const StoryOptions = () => {
     try {
       if (!requestId) return;
       
-      // En una implementación real, aquí enviarías la selección al backend
-      // Por ahora, solo actualizamos en localStorage
-      console.log("Guardando selección:", selectedOption);
+      // Actualizar la selección en Supabase
+      const { error: updateError } = await supabase
+        .from('story_requests')
+        .update({ 
+          status: 'seleccion',
+          selected_plot: selectedOption 
+        })
+        .eq('request_id', requestId);
       
-      const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      const updatedRequests = savedRequests.map((req: StoryRequest) => {
-        if (req.id === requestId) {
-          return {
-            ...req,
-            status: 'seleccion' as StoryStatus,
-            selectedPlot: selectedOption,
-          };
-        }
-        return req;
-      });
-      
-      localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
 
       const selectedOptionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       
@@ -142,7 +165,7 @@ const StoryOptions = () => {
           optionTitle: selectedOptionData?.title
         } 
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error saving selection:", err);
       setError("Hubo un error al guardar tu selección. Por favor intenta nuevamente.");
       toast({

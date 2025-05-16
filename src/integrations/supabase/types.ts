@@ -9,7 +9,92 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      plot_options: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          option_id: string
+          request_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          option_id: string
+          request_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          option_id?: string
+          request_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plot_options_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "story_requests"
+            referencedColumns: ["request_id"]
+          },
+        ]
+      }
+      story_requests: {
+        Row: {
+          additional_details: string | null
+          child_age: string
+          child_name: string
+          created_at: string
+          email: string
+          form_data: Json | null
+          id: string
+          name: string
+          production_days: number | null
+          request_id: string
+          selected_plot: string | null
+          special_interests: string | null
+          status: string
+          story_theme: string
+        }
+        Insert: {
+          additional_details?: string | null
+          child_age: string
+          child_name: string
+          created_at?: string
+          email: string
+          form_data?: Json | null
+          id?: string
+          name: string
+          production_days?: number | null
+          request_id: string
+          selected_plot?: string | null
+          special_interests?: string | null
+          status?: string
+          story_theme: string
+        }
+        Update: {
+          additional_details?: string | null
+          child_age?: string
+          child_name?: string
+          created_at?: string
+          email?: string
+          form_data?: Json | null
+          id?: string
+          name?: string
+          production_days?: number | null
+          request_id?: string
+          selected_plot?: string | null
+          special_interests?: string | null
+          status?: string
+          story_theme?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

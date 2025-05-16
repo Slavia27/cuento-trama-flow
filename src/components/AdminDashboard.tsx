@@ -75,49 +75,44 @@ const AdminDashboard = () => {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const { toast } = useToast();
   
-  // Cargar solicitudes de localStorage (simulando una base de datos)
+  // Cargar solicitudes desde Supabase
   useEffect(() => {
-    const loadAndUpdateRequests = () => {
+    const loadRequests = async () => {
       try {
-        const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
+        // Obtener todas las solicitudes de Supabase
+        const { data, error } = await supabase
+          .from('story_requests')
+          .select('*')
+          .order('created_at', { ascending: false });
         
-        // Update any legacy status values to match the new status flow
-        const updatedRequests = savedRequests.map((req: any) => {
-          const typedRequest: StoryRequest = { ...req };
-          
-          // Convert old status values to new ones
-          if (req.status === 'pending') {
-            typedRequest.status = 'pendiente';
-          } 
-          else if (req.status === 'options_sent') {
-            typedRequest.status = 'opciones';
-          }
-          else if (req.status === 'option_selected' || req.status === 'payment_created' || req.status === 'payment_pending') {
-            typedRequest.status = 'seleccion';
-          }
-          else if (req.status === 'completed') {
-            typedRequest.status = 'completado';
-          }
-          // If it's already using the new status values, keep them
-          else if (['pendiente', 'opciones', 'seleccion', 'pagado', 'produccion', 'envio', 'completado'].includes(req.status)) {
-            // Make sure to cast it to StoryStatus type for type safety
-            typedRequest.status = req.status as StoryStatus;
-          }
-          // Default fallback
-          else {
-            typedRequest.status = 'pendiente';
-          }
-          
-          return typedRequest;
-        });
-        
-        // Save the updated requests back to localStorage
-        if (JSON.stringify(updatedRequests) !== JSON.stringify(savedRequests)) {
-          localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
+        if (error) {
+          throw new Error(error.message);
         }
+
+        if (!data) {
+          setRequests([]);
+          return;
+        }
+
+        // Convertir los datos a nuestro formato de StoryRequest
+        const formattedRequests: StoryRequest[] = data.map(req => ({
+          id: req.request_id,
+          name: req.name,
+          email: req.email,
+          childName: req.child_name,
+          childAge: req.child_age,
+          storyTheme: req.story_theme,
+          specialInterests: req.special_interests || '',
+          additionalDetails: req.additional_details || undefined,
+          status: (req.status || 'pendiente') as StoryStatus,
+          createdAt: req.created_at,
+          selectedPlot: req.selected_plot || undefined,
+          productionDays: req.production_days || 15,
+          formData: req.form_data || undefined
+        }));
         
-        setRequests(updatedRequests);
-        console.log("Loaded requests:", updatedRequests);
+        setRequests(formattedRequests);
+        console.log("Loaded requests:", formattedRequests);
       } catch (error) {
         console.error("Error loading requests:", error);
         toast({
@@ -128,18 +123,51 @@ const AdminDashboard = () => {
       }
     };
     
-    loadAndUpdateRequests();
+    loadRequests();
+    
+    // Suscribirse a cambios en la tabla story_requests
+    const channel = supabase
+      .channel('story_requests_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'story_requests' }, 
+        () => {
+          loadRequests();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [toast]);
   
-  // Guardar solicitudes en localStorage cuando se actualizan
-  useEffect(() => {
-    if (requests.length > 0) {
-      localStorage.setItem('storyRequests', JSON.stringify(requests));
-    }
-  }, [requests]);
-  
-  const handleSelectRequest = (request: StoryRequest) => {
+  const handleSelectRequest = async (request: StoryRequest) => {
     setSelectedRequest(request);
+    
+    // Obtener las opciones de trama para esta solicitud si está en estado opciones o posterior
+    if (request.status !== 'pendiente') {
+      try {
+        const { data, error } = await supabase
+          .from('plot_options')
+          .select('*')
+          .eq('request_id', request.id);
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          const options = data.map(opt => ({
+            id: opt.option_id,
+            title: opt.title,
+            description: opt.description
+          }));
+          
+          setSelectedRequest(prev => prev ? {...prev, plotOptions: options} : null);
+        }
+      } catch (err) {
+        console.error("Error al cargar opciones:", err);
+      }
+    }
+    
     setPlotOptions(request.plotOptions || [
       { title: '', description: '' },
       { title: '', description: '' },
@@ -160,18 +188,35 @@ const AdminDashboard = () => {
     setPlotOptions(newOptions);
   };
 
-  const handleDeleteRequest = (id: string) => {
-    const updatedRequests = requests.filter(req => req.id !== id);
-    setRequests(updatedRequests);
-    
-    if (selectedRequest?.id === id) {
-      setSelectedRequest(null);
+  const handleDeleteRequest = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('story_requests')
+        .delete()
+        .eq('request_id', id);
+        
+      if (error) throw error;
+      
+      // Actualizar el estado local
+      const updatedRequests = requests.filter(req => req.id !== id);
+      setRequests(updatedRequests);
+      
+      if (selectedRequest?.id === id) {
+        setSelectedRequest(null);
+      }
+      
+      toast({
+        title: "Solicitud eliminada",
+        description: "La solicitud ha sido eliminada correctamente.",
+      });
+    } catch (err) {
+      console.error("Error al eliminar la solicitud:", err);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la solicitud",
+        variant: "destructive",
+      });
     }
-    
-    toast({
-      title: "Solicitud eliminada",
-      description: "La solicitud ha sido eliminada correctamente.",
-    });
   };
   
   const handleSendOptions = async () => {
@@ -212,29 +257,21 @@ const AdminDashboard = () => {
         throw new Error(error.message);
       }
       
-      // Actualizar el estado de la solicitud
-      const updatedRequests = requests.map(req => {
-        if (req.id === selectedRequest.id) {
-          return {
-            ...req,
-            status: 'opciones' as StoryStatus,
-            plotOptions: optionsWithIds,
-          };
-        }
-        return req;
+      // La función edge actualizará el estado en la base de datos
+      // y los cambios se reflejarán a través de la suscripción a cambios en tiempo real
+      
+      toast({
+        title: "Opciones enviadas",
+        description: `Se han enviado las opciones de trama para ${selectedRequest.childName} por correo electrónico.`,
       });
       
-      setRequests(updatedRequests);
+      // Actualizar el estado local para una respuesta inmediata
       setSelectedRequest(prev => prev ? {
         ...prev,
         status: 'opciones',
         plotOptions: optionsWithIds,
       } : null);
       
-      toast({
-        title: "Opciones enviadas",
-        description: `Se han enviado las opciones de trama para ${selectedRequest.childName} por correo electrónico.`,
-      });
     } catch (error: any) {
       toast({
         title: "Error al enviar opciones",
@@ -253,20 +290,38 @@ const AdminDashboard = () => {
     try {
       setIsResending(true);
       
+      // Obtener las opciones de la base de datos
+      const { data, error } = await supabase
+        .from('plot_options')
+        .select('*')
+        .eq('request_id', selectedRequest.id);
+        
+      if (error) throw new Error(error.message);
+      
+      if (!data || data.length === 0) {
+        throw new Error("No se encontraron opciones para reenviar");
+      }
+      
+      const plotOptions = data.map(opt => ({
+        id: opt.option_id,
+        title: opt.title,
+        description: opt.description
+      }));
+      
       // Enviar correo electrónico usando la función edge - Agregado el parámetro resend: true
-      const { data, error } = await supabase.functions.invoke('send-plot-options', {
+      const { error: invokeError } = await supabase.functions.invoke('send-plot-options', {
         body: {
           to: selectedRequest.email,
           name: selectedRequest.name,
           childName: selectedRequest.childName,
           requestId: selectedRequest.id,
-          plotOptions: selectedRequest.plotOptions,
+          plotOptions,
           resend: true // Indicamos que es un reenvío
         }
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (invokeError) {
+        throw new Error(invokeError.message);
       }
       
       toast({
@@ -292,39 +347,42 @@ const AdminDashboard = () => {
       setIsSendingPaymentLink(true);
       
       // Encontrar el título de la opción seleccionada
-      const selectedOption = selectedRequest.plotOptions?.find(opt => opt.id === selectedRequest.selectedPlot);
-      if (!selectedOption) {
+      const { data, error } = await supabase
+        .from('plot_options')
+        .select('*')
+        .eq('option_id', selectedRequest.selectedPlot)
+        .eq('request_id', selectedRequest.id)
+        .single();
+      
+      if (error || !data) {
         throw new Error("No se encontró la opción seleccionada");
       }
       
       // Enviar correo electrónico con enlace de pago
-      const { data, error } = await supabase.functions.invoke('send-payment-link', {
+      const { error: invokeError } = await supabase.functions.invoke('send-payment-link', {
         body: {
           to: selectedRequest.email,
           name: selectedRequest.name,
           childName: selectedRequest.childName,
           requestId: selectedRequest.id,
           optionId: selectedRequest.selectedPlot,
-          optionTitle: selectedOption.title,
+          optionTitle: data.title,
         }
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (invokeError) {
+        throw new Error(invokeError.message);
       }
       
-      // Actualizar estado a pagado (esto simula que el pago ya fue recibido)
-      const updatedRequests = requests.map(req => {
-        if (req.id === selectedRequest.id) {
-          return {
-            ...req,
-            status: 'pagado' as StoryStatus,
-          };
-        }
-        return req;
-      });
+      // Actualizar estado a pagado
+      const { error: updateError } = await supabase
+        .from('story_requests')
+        .update({ status: 'pagado' })
+        .eq('request_id', selectedRequest.id);
+        
+      if (updateError) throw new Error(updateError.message);
       
-      setRequests(updatedRequests);
+      // Actualizar el estado local para una respuesta inmediata
       setSelectedRequest(prev => prev ? {
         ...prev,
         status: 'pagado',
@@ -346,64 +404,74 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUpdateProductionState = (newState: StoryStatus) => {
+  const handleUpdateProductionState = async (newState: StoryStatus) => {
     if (!selectedRequest) return;
     
-    // Actualizar el estado de la solicitud
-    const updatedRequests = requests.map(req => {
-      if (req.id === selectedRequest.id) {
-        return {
-          ...req,
-          status: newState,
-        };
-      }
-      return req;
-    });
-    
-    setRequests(updatedRequests);
-    setSelectedRequest(prev => prev ? {
-      ...prev,
-      status: newState,
-    } : null);
-    
-    const statusLabels = {
-      'produccion': 'Producción',
-      'envio': 'Envío',
-      'completado': 'Completado'
-    };
-    
-    toast({
-      title: "Estado actualizado",
-      description: `La solicitud ha sido actualizada al estado: ${statusLabels[newState]}.`,
-    });
+    try {
+      // Actualizar en la base de datos
+      const { error } = await supabase
+        .from('story_requests')
+        .update({ status: newState })
+        .eq('request_id', selectedRequest.id);
+        
+      if (error) throw error;
+      
+      // Actualizar el estado local para una respuesta inmediata
+      setSelectedRequest(prev => prev ? {
+        ...prev,
+        status: newState,
+      } : null);
+      
+      const statusLabels = {
+        'produccion': 'Producción',
+        'envio': 'Envío',
+        'completado': 'Completado'
+      };
+      
+      toast({
+        title: "Estado actualizado",
+        description: `La solicitud ha sido actualizada al estado: ${statusLabels[newState]}.`,
+      });
+    } catch (err) {
+      console.error("Error al actualizar el estado:", err);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la solicitud",
+        variant: "destructive",
+      });
+    }
   };
   
-  const handleUpdateProductionDays = () => {
+  const handleUpdateProductionDays = async () => {
     if (!selectedRequest) return;
     
-    // Actualizar los días de producción para la solicitud seleccionada
-    const updatedRequests = requests.map(req => {
-      if (req.id === selectedRequest.id) {
-        return {
-          ...req,
-          productionDays,
-        };
-      }
-      return req;
-    });
-    
-    setRequests(updatedRequests);
-    
-    // Actualizar la solicitud seleccionada
-    setSelectedRequest(prev => prev ? {
-      ...prev,
-      productionDays,
-    } : null);
-    
-    toast({
-      title: "Días de producción actualizados",
-      description: `Se han establecido ${productionDays} días hábiles para la producción del cuento.`,
-    });
+    try {
+      // Actualizar en la base de datos
+      const { error } = await supabase
+        .from('story_requests')
+        .update({ production_days: productionDays })
+        .eq('request_id', selectedRequest.id);
+        
+      if (error) throw error;
+      
+      // Actualizar el estado local para una respuesta inmediata
+      setSelectedRequest(prev => prev ? {
+        ...prev,
+        productionDays,
+      } : null);
+      
+      toast({
+        title: "Días de producción actualizados",
+        description: `Se han establecido ${productionDays} días hábiles para la producción del cuento.`,
+      });
+    } catch (err) {
+      console.error("Error al actualizar los días de producción:", err);
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar los días de producción",
+        variant: "destructive",
+      });
+    }
   };
   
   // Componente para mostrar todos los detalles del formulario

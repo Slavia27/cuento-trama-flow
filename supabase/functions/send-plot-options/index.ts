@@ -1,12 +1,24 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "npm:@supabase/supabase-js@2.39.6";
 
 // Inicializar Resend con la API key desde las variables de entorno
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 if (!resendApiKey) {
   console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
 }
+
+// Obtener las variables de entorno de Supabase
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error("ERROR: Variables de entorno de Supabase no configuradas");
+}
+
+// Inicializar Supabase client
+const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
 // Inicializar Resend con validación 
 const resend = new Resend(resendApiKey);
@@ -54,6 +66,39 @@ serve(async (req) => {
     console.log(`Enviando correo a: ${to} para el cuento de ${childName}`);
     console.log(`Número de opciones: ${plotOptions.length}`);
     console.log(`¿Es un reenvío?: ${isResend ? "Sí" : "No"}`);
+    
+    // Guardar en Supabase si no es un reenvío
+    if (!isResend) {
+      console.log("Guardando opciones en la base de datos");
+      
+      // Guardar cada opción en la tabla plot_options
+      for (const option of plotOptions) {
+        const { error } = await supabase
+          .from('plot_options')
+          .upsert({
+            option_id: option.id,
+            request_id: requestId,
+            title: option.title,
+            description: option.description
+          });
+          
+        if (error) {
+          console.error("Error al guardar opción:", error);
+          throw new Error(`Error al guardar opción en la base de datos: ${error.message}`);
+        }
+      }
+      
+      // Actualizar el estado de la solicitud
+      const { error: updateError } = await supabase
+        .from('story_requests')
+        .update({ status: 'opciones' })
+        .eq('request_id', requestId);
+        
+      if (updateError) {
+        console.error("Error al actualizar estado:", updateError);
+        throw new Error(`Error al actualizar estado en la base de datos: ${updateError.message}`);
+      }
+    }
     
     // Generar el HTML para las opciones de trama
     const optionsHTML = plotOptions.map((option, index) => `
