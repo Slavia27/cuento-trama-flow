@@ -20,7 +20,7 @@ const Index = () => {
         <section className="container py-16 px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-rasti-darkgray">¿Listo para crear un cuento único?</h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-700 mb-8">
               No esperes más para regalar una experiencia inolvidable. Los cuentos personalizados son 
               el regalo perfecto para cualquier ocasión especial.
             </p>
@@ -42,7 +42,7 @@ const Index = () => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Personalización Completa</h3>
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   Cada cuento está diseñado específicamente para el niño o niña, incluyendo sus gustos, 
                   intereses y características personales.
                 </p>
@@ -57,7 +57,7 @@ const Index = () => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Proceso Colaborativo</h3>
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   Trabajamos juntos para crear la historia perfecta, ofreciéndote opciones de trama 
                   para que elijas la que más te guste.
                 </p>
@@ -71,7 +71,7 @@ const Index = () => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Experiencia Educativa</h3>
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   No es solo un libro, es una experiencia que creará recuerdos duraderos, fomentará 
                   el amor por la lectura y ayudará en el aprendizaje.
                 </p>
@@ -84,7 +84,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-rasti-blue/10 rounded-xl p-8 lg:p-12">
             <div>
               <h2 className="text-3xl font-bold mb-4 text-rasti-darkgray">Testimonios de padres y niños</h2>
-              <p className="text-lg text-gray-600 mb-6">
+              <p className="text-lg text-gray-700 mb-6">
                 Descubre lo que dicen las familias que ya han disfrutado de nuestros cuentos personalizados.
               </p>
               <div className="bg-white rounded-lg p-6 shadow-md">
@@ -94,10 +94,10 @@ const Index = () => {
                   </div>
                   <div className="ml-4">
                     <h4 className="font-bold">Laura García</h4>
-                    <p className="text-sm text-gray-500">Mamá de Sofía, 6 años</p>
+                    <p className="text-sm text-gray-700">Mamá de Sofía, 6 años</p>
                   </div>
                 </div>
-                <p className="italic text-gray-600">
+                <p className="italic text-gray-700">
                   "El cuento personalizado que crearon para mi hija Sofía superó todas mis expectativas. 
                   Ella se emocionó tanto al verse como protagonista de su propia historia. ¡Ahora pide 
                   leerlo todas las noches antes de dormir!"

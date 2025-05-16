@@ -17,7 +17,7 @@ const QuienesSomosPage = () => {
           <div className="container px-4">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl font-bold text-rasti-darkgray mb-6">Quiénes Somos</h1>
-              <p className="text-lg text-gray-600 mb-8">
+              <p className="text-lg text-gray-700 mb-8">
                 Somos un equipo de profesionales apasionados por la literatura infantil y la educación, 
                 dedicados a crear experiencias de lectura únicas que inspiren a los niños y niñas a soñar, 
                 aprender y crecer.
@@ -47,13 +47,13 @@ const QuienesSomosPage = () => {
               </div>
               <div>
                 <h2 className="text-3xl font-bold mb-6 text-rasti-darkgray">Nuestra historia</h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-700 mb-4">
                   Cuentos Personalizados nació en 2023 como un proyecto que busca revolucionar la forma en que los 
                   niños y niñas se relacionan con la lectura. Inspirados en la metodología educativa de Rasti, 
                   donde el juego y la creatividad son fundamentales para el aprendizaje, decidimos crear una 
                   plataforma que permita generar cuentos únicos y personalizados.
                 </p>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-700 mb-4">
                   Creemos firmemente que cada niño es único, y por eso sus historias también deben serlo. 
                   Al personalizar cada cuento según los intereses, características y necesidades específicas del pequeño lector, 
                   logramos captar su atención y despertar su amor por la lectura desde temprana edad.
@@ -69,42 +69,42 @@ const QuienesSomosPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-rasti-blue">
               <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Creatividad</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Fomentamos la imaginación y la creatividad en cada historia que creamos, inspirando a los niños 
                 a pensar de manera diferente y a explorar nuevas posibilidades.
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-rasti-red">
               <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Personalización</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Nos adaptamos a las necesidades específicas de cada niño, creando historias que reflejen sus 
                 intereses, vivencias y características únicas.
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-rasti-green">
               <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Educación</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Integramos elementos educativos en nuestras historias, promoviendo el aprendizaje de manera 
                 divertida y significativa para los pequeños lectores.
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-rasti-yellow">
               <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Colaboración</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Trabajamos en estrecha colaboración con las familias para asegurarnos de que cada cuento cumpla 
                 con sus expectativas y necesidades específicas.
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-rasti-blue">
               <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Inclusión</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Creemos que la diversidad enriquece nuestras historias, por lo que nos esforzamos por representar 
                 a todos los niños y niñas en nuestros cuentos.
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-rasti-red">
               <h3 className="text-xl font-bold mb-3 text-rasti-darkgray">Excelencia</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Nos comprometemos con la calidad en cada paso del proceso, desde la creación hasta la entrega 
                 del producto final.
               </p>
@@ -128,7 +128,7 @@ const QuienesSomosPage = () => {
                 <div className="p-6">
                   <h3 className="text-xl font-bold mb-1 text-rasti-darkgray">Carla Muñoz</h3>
                   <p className="text-rasti-blue font-semibold mb-3">Fundadora y Directora Creativa</p>
-                  <p className="text-gray-600">
+                  <p className="text-gray-700">
                     Especialista en literatura infantil con más de 10 años de experiencia en el sector editorial.
                   </p>
                 </div>
@@ -145,7 +145,7 @@ const QuienesSomosPage = () => {
                 <div className="p-6">
                   <h3 className="text-xl font-bold mb-1 text-rasti-darkgray">Pablo Valenzuela</h3>
                   <p className="text-rasti-red font-semibold mb-3">Director de Tecnología</p>
-                  <p className="text-gray-600">
+                  <p className="text-gray-700">
                     Ingeniero informático con especialización en desarrollo web y experiencia en empresas de edtech.
                   </p>
                 </div>
@@ -162,7 +162,7 @@ const QuienesSomosPage = () => {
                 <div className="p-6">
                   <h3 className="text-xl font-bold mb-1 text-rasti-darkgray">Laura Rodríguez</h3>
                   <p className="text-rasti-green font-semibold mb-3">Gerente Educativa</p>
-                  <p className="text-gray-600">
+                  <p className="text-gray-700">
                     Psicopedagoga con amplia experiencia en educación infantil y desarrollo de materiales didácticos.
                   </p>
                 </div>
@@ -176,7 +176,7 @@ const QuienesSomosPage = () => {
           <div className="bg-rasti-blue/10 rounded-xl p-8 lg:p-12">
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-4 text-rasti-darkgray">¿Quieres formar parte de nuestra historia?</h2>
-              <p className="text-lg text-gray-600 mb-8">
+              <p className="text-lg text-gray-700 mb-8">
                 Crea un cuento personalizado para ese niño o niña especial en tu vida y ayúdales a descubrir
                 el maravilloso mundo de la lectura de una forma única y personalizada.
               </p>

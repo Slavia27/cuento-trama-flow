@@ -17,7 +17,7 @@ const Hero = () => {
               <span className="block mt-2 text-rasti-blue"> momentos especiales</span>
             </h1>
             
-            <p className="text-lg md:text-xl text-gray-600">
+            <p className="text-lg md:text-xl text-gray-700">
               Creamos historias únicas adaptadas a cada niño y niña. Con un enfoque educativo y divertido, 
               nuestros cuentos fomentan la creatividad y el aprendizaje.
             </p>
@@ -44,7 +44,7 @@ const Hero = () => {
                   </div>
                 </div>
                 <div className="bg-rasti-yellow rounded-md shadow-md floating" style={{animationDelay: "0.5s"}}>
-                  <div className="h-full flex items-center justify-center text-white font-bold">
+                  <div className="h-full flex items-center justify-center text-rasti-darkgray font-bold">
                     A
                   </div>
                 </div>
@@ -69,7 +69,7 @@ const Hero = () => {
                   </div>
                 </div>
                 <div className="col-span-3 bg-rasti-yellow rounded-md shadow-md">
-                  <div className="h-full flex items-center justify-center text-white font-bold">
+                  <div className="h-full flex items-center justify-center text-rasti-darkgray font-bold">
                     PERSONALIZADO
                   </div>
                 </div>
