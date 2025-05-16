@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -45,6 +46,7 @@ const formSchema = z.object({
   // Información básica
   codigoPedido: z.string().min(1, { message: 'El código de pedido es requerido.' }),
   nombreCompleto: z.string().min(1, { message: 'El nombre completo es requerido.' }),
+  correoElectronico: z.string().email({ message: 'Por favor ingresa un correo electrónico válido.' }),
   nombreHijo: z.string().min(1, { message: 'El nombre del hijo/a es requerido.' }),
   edadHijo: z.string().min(1, { message: 'La edad es requerida.' }),
   conQuienVive: z.string().min(1, { message: 'Este campo es requerido.' }),
@@ -99,6 +101,7 @@ const RequestForm = () => {
     defaultValues: {
       codigoPedido: '',
       nombreCompleto: '',
+      correoElectronico: '',
       nombreHijo: '',
       edadHijo: '',
       conQuienVive: '',
@@ -139,7 +142,7 @@ const RequestForm = () => {
       const storyRequest = {
         id: `req-${Date.now()}`,
         name: data.nombreCompleto,
-        email: "cliente@example.com", // Podríamos agregar campo de email al formulario
+        email: data.correoElectronico,
         childName: data.nombreHijo,
         childAge: data.edadHijo,
         storyTheme: data.situacionTrabajo,
@@ -215,10 +218,27 @@ const RequestForm = () => {
               
               <FormField
                 control={form.control}
+                name="correoElectronico"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>3. Correo electrónico *</FormLabel>
+                    <FormDescription>
+                      Te contactaremos a través de este correo con los detalles de tu historia
+                    </FormDescription>
+                    <FormControl>
+                      <Input type="email" placeholder="tucorreo@ejemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
                 name="nombreHijo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>3. ¿Cómo se llama tu hijo o hija? *</FormLabel>
+                    <FormLabel>4. ¿Cómo se llama tu hijo o hija? *</FormLabel>
                     <FormControl>
                       <Input placeholder="Nombre del niño/a" {...field} />
                     </FormControl>
@@ -232,7 +252,7 @@ const RequestForm = () => {
                 name="edadHijo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>4. ¿Qué edad tiene? *</FormLabel>
+                    <FormLabel>5. ¿Qué edad tiene? *</FormLabel>
                     <FormControl>
                       <Input placeholder="Edad" {...field} />
                     </FormControl>
@@ -246,7 +266,7 @@ const RequestForm = () => {
                 name="conQuienVive"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>5. ¿Con quién vive? *</FormLabel>
+                    <FormLabel>6. ¿Con quién vive? *</FormLabel>
                     <FormDescription>
                       Ambos padres, un padre/madre, otros personas significativas
                     </FormDescription>
@@ -263,7 +283,7 @@ const RequestForm = () => {
                 name="personalidadHijo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>6. ¿Cómo describirías brevemente la personalidad de tu hijo? *</FormLabel>
+                    <FormLabel>7. ¿Cómo describirías brevemente la personalidad de tu hijo? *</FormLabel>
                     <FormDescription>
                       Esta pregunta proporciona contexto valioso para la caracterización de personajes con los que el niño pueda identificarse
                     </FormDescription>
@@ -657,7 +677,7 @@ const RequestForm = () => {
             <div className="mt-8">
               <Button 
                 type="submit" 
-                className="w-full bg-story-blue hover:bg-story-blue/80 text-white text-lg py-6 font-semibold" 
+                className="w-full bg-rasti-blue hover:bg-rasti-blue/90 text-white text-lg py-6 font-semibold rounded-md shadow-md" 
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Enviando...' : 'Enviar Formulario'}
