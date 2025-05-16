@@ -156,78 +156,81 @@ const StoryOptions = () => {
         throw new Error("ID de solicitud no válido");
       }
       
-      // CRITICAL FIX: Uso de upsert para asegurar la actualización consistente
-      const { error: updateError } = await supabase
+      // Método simplificado para actualizar - enfoque más directo
+      console.log("Intentando actualizar con método simplificado...");
+      const { error: directUpdateError } = await supabase
         .from('story_requests')
         .update({
           selected_plot: selectedOption,
-          status: 'seleccion'  // Aseguramos que el estado se actualice a "seleccion"
+          status: 'seleccion'
         })
         .eq('request_id', requestId);
       
-      if (updateError) {
-        console.error("Error al actualizar la selección:", updateError);
-        throw new Error(updateError.message);
+      if (directUpdateError) {
+        console.error("Error en actualización directa:", directUpdateError);
+        
+        // Intento fallback - Actualizar por separado
+        console.log("Intento de respaldo: Actualizando por separado...");
+        
+        // Primero actualizar solo la selección
+        const { error: plotError } = await supabase
+          .from('story_requests')
+          .update({ selected_plot: selectedOption })
+          .eq('request_id', requestId);
+          
+        if (plotError) {
+          console.error("Error al actualizar la selección:", plotError);
+        } else {
+          console.log("Selección guardada correctamente");
+        }
+        
+        // Luego actualizar solo el estado
+        const { error: statusError } = await supabase
+          .from('story_requests')
+          .update({ status: 'seleccion' })
+          .eq('request_id', requestId);
+          
+        if (statusError) {
+          console.error("Error al actualizar el estado:", statusError);
+          throw new Error("No se pudo guardar la selección. Por favor intenta nuevamente.");
+        } else {
+          console.log("Estado actualizado correctamente");
+        }
+      } else {
+        console.log("Actualización directa completada correctamente");
       }
-
-      console.log("Selección guardada correctamente");
       
-      // Verificación adicional para confirmar que el cambio se aplicó
-      const { data: updatedRequest, error: refreshError } = await supabase
+      // Verificar que los cambios se hayan guardado
+      const { data: checkData, error: checkError } = await supabase
         .from('story_requests')
         .select('status, selected_plot')
         .eq('request_id', requestId)
         .single();
         
-      if (refreshError) {
-        console.error("Error al verificar la actualización:", refreshError);
-        
-        // Si hay un error en la verificación, intentamos una actualización forzada solo del estado
-        const { error: forceStatusError } = await supabase
-          .from('story_requests')
-          .update({ status: 'seleccion' })
-          .eq('request_id', requestId);
-          
-        if (forceStatusError) {
-          console.error("Error al forzar actualización del estado:", forceStatusError);
-        } else {
-          console.log("Estado actualizado mediante actualización forzada");
-        }
+      if (checkError) {
+        console.error("Error al verificar el estado:", checkError);
       } else {
-        console.log("Estado actualizado en la base de datos:", updatedRequest);
+        console.log("Verificación de estado:", checkData);
         
-        // Si la actualización no se aplicó correctamente, intentamos nuevamente
-        if (updatedRequest.status !== 'seleccion') {
-          console.warn("El estado no se actualizó correctamente. Intentando actualizar nuevamente...");
+        if (checkData.status !== 'seleccion' || checkData.selected_plot !== selectedOption) {
+          console.warn("La verificación muestra que los datos no se actualizaron correctamente");
+          console.warn("Estado actual:", checkData.status);
+          console.warn("Selección actual:", checkData.selected_plot);
           
-          // Intento explícito solo para el estado
-          const { error: retryError } = await supabase
-            .from('story_requests')
-            .update({ status: 'seleccion' })
-            .eq('request_id', requestId);
-            
-          if (retryError) {
-            console.error("Error en el segundo intento de actualización de estado:", retryError);
-          } else {
-            console.log("Estado actualizado en segundo intento");
-          }
-        }
-        
-        // Si la opción seleccionada no se actualizó, intentamos nuevamente
-        if (updatedRequest.selected_plot !== selectedOption) {
-          console.warn("La opción seleccionada no se actualizó correctamente. Intentando actualizar nuevamente...");
+          // Intento final forzado (solo si la verificación muestra datos inconsistentes)
+          console.log("Intento final forzado...");
+          const { error: finalError } = await supabase.rpc('force_update_selection', { 
+            req_id: requestId,
+            selection: selectedOption
+          });
           
-          // Intento explícito solo para la opción seleccionada
-          const { error: retryError } = await supabase
-            .from('story_requests')
-            .update({ selected_plot: selectedOption })
-            .eq('request_id', requestId);
-            
-          if (retryError) {
-            console.error("Error en el segundo intento de actualización de opción:", retryError);
+          if (finalError) {
+            console.error("Error en el intento final:", finalError);
           } else {
-            console.log("Opción seleccionada actualizada en segundo intento");
+            console.log("Intento final completado");
           }
+        } else {
+          console.log("Verificación exitosa: Los datos se actualizaron correctamente");
         }
       }
       
@@ -235,7 +238,7 @@ const StoryOptions = () => {
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       setSelectedOptionData(optionData || null);
       
-      // REDUNDANCIA: Actualizar estado local incluso si la base de datos falla
+      // Actualizar estado local
       if (request) {
         setRequest({
           ...request,
@@ -317,9 +320,9 @@ const StoryOptions = () => {
   }
   
   // Si ya se ha seleccionado una opción anteriormente, mostrar mensaje y redirigir
-  if (request.status === 'seleccion' || request.status === 'pagado' || 
-      request.status === 'produccion' || request.status === 'envio' || 
-      request.status === 'completado') {
+  if (request?.status === 'seleccion' || request?.status === 'pagado' || 
+      request?.status === 'produccion' || request?.status === 'envio' || 
+      request?.status === 'completado') {
     
     return (
       <div className="container py-12 max-w-xl mx-auto">
