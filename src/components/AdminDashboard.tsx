@@ -13,6 +13,7 @@ import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Json } from '@/integrations/supabase/types';
 
+// Type definitions
 type FormData = {
   codigoPedido: string;
   nombreCompleto: string;
@@ -58,7 +59,7 @@ type StoryRequest = {
   plotOptions?: { id: string; title: string; description: string }[];
   selectedPlot?: string;
   productionDays?: number;
-  formData?: FormData | Json;  // Updated type definition to allow Json type from Supabase
+  formData?: FormData | Json;  // Updated to accept both FormData and Json types
 };
 
 const AdminDashboard = () => {
@@ -76,26 +77,32 @@ const AdminDashboard = () => {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const { toast } = useToast();
   
-  // Cargar solicitudes desde Supabase
+  // Load requests from Supabase with improved error handling
   useEffect(() => {
     const loadRequests = async () => {
       try {
-        // Obtener todas las solicitudes de Supabase
+        console.log("Fetching story requests from Supabase...");
+        
+        // Get all requests from Supabase
         const { data, error } = await supabase
           .from('story_requests')
           .select('*')
           .order('created_at', { ascending: false });
         
         if (error) {
+          console.error("Supabase error:", error);
           throw new Error(error.message);
         }
 
         if (!data) {
+          console.log("No data returned from Supabase");
           setRequests([]);
           return;
         }
 
-        // Convertir los datos a nuestro formato de StoryRequest
+        console.log("Raw data from Supabase:", data);
+
+        // Convert data to our StoryRequest format
         const formattedRequests: StoryRequest[] = data.map(req => ({
           id: req.request_id,
           name: req.name,
@@ -109,7 +116,7 @@ const AdminDashboard = () => {
           createdAt: req.created_at,
           selectedPlot: req.selected_plot || undefined,
           productionDays: req.production_days || 15,
-          formData: req.form_data || undefined
+          formData: req.form_data
         }));
         
         setRequests(formattedRequests);
@@ -118,7 +125,7 @@ const AdminDashboard = () => {
         console.error("Error loading requests:", error);
         toast({
           title: "Error",
-          description: "Error al cargar las solicitudes",
+          description: "Error al cargar las solicitudes. Por favor, intenta de nuevo.",
           variant: "destructive",
         });
       }
@@ -126,12 +133,13 @@ const AdminDashboard = () => {
     
     loadRequests();
     
-    // Suscribirse a cambios en la tabla story_requests
+    // Subscribe to changes in story_requests table
     const channel = supabase
       .channel('story_requests_changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'story_requests' }, 
-        () => {
+        (payload) => {
+          console.log("Realtime update received:", payload);
           loadRequests();
         }
       )
@@ -479,8 +487,17 @@ const AdminDashboard = () => {
   const FormDetailView = ({ formData }: { formData?: FormData | Json }) => {
     if (!formData) return <p>No hay datos de formulario disponibles</p>;
 
-    // Check if formData is a JSON object before accessing its properties
+    // Check and convert formData to the correct type
     const data = formData as FormData;
+    
+    const hasRequiredFields = data && 
+      typeof data === 'object' && 
+      'nombreHijo' in data && 
+      'nombreCompleto' in data;
+
+    if (!hasRequiredFields) {
+      return <p className="text-red-500">El formato de los datos del formulario es incorrecto</p>;
+    }
 
     return (
       <div className="space-y-6 max-h-[70vh] overflow-y-auto p-2">
