@@ -68,15 +68,6 @@ export const usePlotOptions = () => {
   };
 
   const resendPlotOptions = async (request: StoryRequest) => {
-    if (!request.plotOptions) {
-      toast({
-        title: "Error",
-        description: "No hay opciones para reenviar",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
     try {
       setIsResending(true);
       
@@ -89,7 +80,39 @@ export const usePlotOptions = () => {
       if (error) throw new Error(error.message);
       
       if (!data || data.length === 0) {
-        throw new Error("No se encontraron opciones para reenviar");
+        // Si no hay opciones en la base de datos pero el estado es 'opciones', 
+        // permitir reenviar con un mensaje genérico
+        if (request.status === 'opciones' || request.status === 'seleccion' || request.status === 'pagado') {
+          // Usar las opciones del request si existen
+          const optionsToSend = request.plotOptions || [
+            { id: "opt-1", title: "Opción 1", description: "Por favor contacta al administrador si necesitas más detalles sobre esta opción." }
+          ];
+          
+          // Send email using edge function
+          const { error: invokeError } = await supabase.functions.invoke('send-plot-options', {
+            body: {
+              to: request.email,
+              name: request.name,
+              childName: request.childName,
+              requestId: request.id,
+              plotOptions: optionsToSend,
+              resend: true
+            }
+          });
+
+          if (invokeError) {
+            throw new Error(invokeError.message);
+          }
+          
+          toast({
+            title: "Correo reenviado",
+            description: `Se han reenviado las opciones de trama para ${request.childName} por correo electrónico.`,
+          });
+          
+          return true;
+        } else {
+          throw new Error("No se encontraron opciones para reenviar");
+        }
       }
       
       const plotOptions = data.map(opt => ({
@@ -155,23 +178,43 @@ export const usePlotOptions = () => {
         .single();
       
       if (error || !data) {
-        throw new Error("No se encontró la opción seleccionada");
-      }
-      
-      // Send payment link email
-      const { error: invokeError } = await supabase.functions.invoke('send-payment-link', {
-        body: {
-          to: request.email,
-          name: request.name,
-          childName: request.childName,
-          requestId: request.id,
-          optionId: request.selectedPlot,
-          optionTitle: data.title,
+        // Si no encontramos la opción seleccionada en la base de datos, usar la del request
+        const selectedOption = request.plotOptions?.find(opt => opt.id === request.selectedPlot);
+        if (!selectedOption) {
+          throw new Error("No se encontró la opción seleccionada");
         }
-      });
+        
+        // Send payment link email
+        const { error: invokeError } = await supabase.functions.invoke('send-payment-link', {
+          body: {
+            to: request.email,
+            name: request.name,
+            childName: request.childName,
+            requestId: request.id,
+            optionId: request.selectedPlot,
+            optionTitle: selectedOption.title,
+          }
+        });
+        
+        if (invokeError) {
+          throw new Error(invokeError.message);
+        }
+      } else {
+        // Send payment link email
+        const { error: invokeError } = await supabase.functions.invoke('send-payment-link', {
+          body: {
+            to: request.email,
+            name: request.name,
+            childName: request.childName,
+            requestId: request.id,
+            optionId: request.selectedPlot,
+            optionTitle: data.title,
+          }
+        });
 
-      if (invokeError) {
-        throw new Error(invokeError.message);
+        if (invokeError) {
+          throw new Error(invokeError.message);
+        }
       }
       
       // Update status to paid

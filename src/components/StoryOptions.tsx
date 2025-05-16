@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle } from 'lucide-react';
 
 type StoryOption = {
   id: string;
@@ -35,6 +35,8 @@ const StoryOptions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectionSuccessful, setSelectionSuccessful] = useState(false);
+  const [selectedOptionData, setSelectedOptionData] = useState<StoryOption | null>(null);
   
   // Cargar solicitud y opciones desde Supabase
   useEffect(() => {
@@ -101,6 +103,12 @@ const StoryOptions = () => {
         
         if (formattedRequest.selectedPlot) {
           setSelectedOption(formattedRequest.selectedPlot);
+          
+          // Si ya hay una opción seleccionada, buscarla en las opciones disponibles
+          const selected = formattedRequest.plotOptions?.find(opt => opt.id === formattedRequest.selectedPlot);
+          if (selected) {
+            setSelectedOptionData(selected);
+          }
         }
         
         if (formattedRequest.plotOptions?.length === 0) {
@@ -177,21 +185,18 @@ const StoryOptions = () => {
         console.log("Estado actualizado en la base de datos:", updatedRequest);
       }
       
-      const selectedOptionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
+      // Buscar la opción seleccionada para mostrarla en el mensaje de éxito
+      const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
+      setSelectedOptionData(optionData || null);
+      
+      // Marcar la selección como exitosa para mostrar la pantalla de confirmación
+      setSelectionSuccessful(true);
       
       toast({
         title: "¡Selección guardada!",
-        description: "Tu selección ha sido guardada. A continuación, podrás realizar el pago para continuar.",
+        description: "Tu selección ha sido guardada exitosamente.",
       });
       
-      // Redirect to payment page with proper state
-      navigate('/pagar', { 
-        state: { 
-          requestId,
-          optionId: selectedOption,
-          optionTitle: selectedOptionData?.title
-        } 
-      });
     } catch (err: any) {
       console.error("Error saving selection:", err);
       setError("Hubo un error al guardar tu selección. Por favor intenta nuevamente.");
@@ -203,6 +208,16 @@ const StoryOptions = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const handleContinueToPay = () => {
+    navigate('/pagar', { 
+      state: { 
+        requestId,
+        optionId: selectedOption,
+        optionTitle: selectedOptionData?.title
+      } 
+    });
   };
   
   if (loading) {
@@ -256,8 +271,7 @@ const StoryOptions = () => {
         <Alert className="mb-6">
           <AlertTitle>Opción ya seleccionada</AlertTitle>
           <AlertDescription>
-            Ya has seleccionado una opción para esta solicitud. 
-            {request.status === 'seleccion' && " Te redirigiremos a la página de pago."}
+            Ya has seleccionado una opción para esta solicitud.
           </AlertDescription>
         </Alert>
         <div className="text-center">
@@ -275,6 +289,33 @@ const StoryOptions = () => {
             className="bg-rasti-blue hover:bg-rasti-blue/80"
           >
             {request.status === 'seleccion' ? 'Ir a Pagar' : 'Volver al inicio'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Pantalla de confirmación después de seleccionar correctamente
+  if (selectionSuccessful) {
+    return (
+      <div className="container py-12 max-w-xl mx-auto">
+        <div className="bg-white p-8 rounded-lg shadow text-center">
+          <div className="flex justify-center mb-4">
+            <CheckCircle className="h-16 w-16 text-green-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4">¡Trama seleccionada correctamente!</h2>
+          <p className="mb-6">
+            Has seleccionado exitosamente la opción: <span className="font-medium">{selectedOptionData?.title}</span>
+          </p>
+          <p className="mb-8 text-muted-foreground">
+            Ahora puedes continuar al proceso de pago para finalizar tu pedido.
+          </p>
+          <Button 
+            onClick={handleContinueToPay}
+            className="bg-rasti-blue hover:bg-rasti-blue/80 w-full max-w-sm"
+            size="lg"
+          >
+            Continuar al pago
           </Button>
         </div>
       </div>
@@ -340,7 +381,7 @@ const StoryOptions = () => {
               Guardando...
             </>
           ) : (
-            'Confirmar Selección y Continuar'
+            'Confirmar Selección'
           )}
         </Button>
       </div>

@@ -23,36 +23,78 @@ const PlotOptionsView = ({
   isResending,
   isSendingPayment
 }: PlotOptionsViewProps) => {
+  // Si no hay opciones pero no estamos en pendiente, mostrar mensaje
+  if (plotOptions.length === 0) {
+    return (
+      <div className="mt-6 p-4 border rounded-md bg-amber-50 text-amber-800">
+        <p>No se encontraron opciones de trama para esta solicitud. 
+        {status === 'opciones' && 
+          <span className="block mt-2">
+            Puedes utilizar el botón "Reenviar Opciones" para reenviar el correo al cliente.
+          </span>
+        }</p>
+        <div className="mt-4 flex gap-2">
+          {status === 'opciones' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onResendOptions}
+              disabled={isResending}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              {isResending ? 'Reenviando...' : 'Reenviar Opciones'}
+            </Button>
+          )}
+          {status === 'seleccion' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onSendPaymentLink}
+              disabled={isSendingPayment}
+              className="flex items-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              {isSendingPayment ? 'Enviando...' : 'Enviar Enlace de Pago'}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-lg font-medium">Opciones de Trama Enviadas</h4>
         
-        {status === 'opciones' && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onResendOptions}
-            disabled={isResending}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            {isResending ? 'Reenviando...' : 'Reenviar Opciones'}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {status === 'opciones' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onResendOptions}
+              disabled={isResending}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              {isResending ? 'Reenviando...' : 'Reenviar Opciones'}
+            </Button>
+          )}
 
-        {status === 'seleccion' && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onSendPaymentLink}
-            disabled={isSendingPayment}
-            className="flex items-center gap-2 ml-2"
-          >
-            <Mail className="w-4 h-4" />
-            {isSendingPayment ? 'Enviando...' : 'Enviar Enlace de Pago'}
-          </Button>
-        )}
+          {status === 'seleccion' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onSendPaymentLink}
+              disabled={isSendingPayment}
+              className="flex items-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              {isSendingPayment ? 'Enviando...' : 'Enviar Enlace de Pago'}
+            </Button>
+          )}
+        </div>
       </div>
       
       <div className="space-y-4">

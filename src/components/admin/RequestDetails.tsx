@@ -209,7 +209,7 @@ const RequestDetails = ({
       )}
       
       {/* Plot Options View for requests with options */}
-      {selectedRequest.status !== 'pendiente' && plotOptions.length > 0 && (
+      {selectedRequest.status !== 'pendiente' && (
         <PlotOptionsView
           plotOptions={plotOptions}
           selectedPlotId={selectedRequest.selectedPlot}
