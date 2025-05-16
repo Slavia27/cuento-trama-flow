@@ -136,21 +136,30 @@ const RequestForm = () => {
       // Simulamos un tiempo de respuesta
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Creamos el objeto de solicitud con todos los datos
+      const storyRequest = {
+        id: `req-${Date.now()}`,
+        name: data.nombreCompleto,
+        email: "cliente@example.com", // Podríamos agregar campo de email al formulario
+        childName: data.nombreHijo,
+        childAge: data.edadHijo,
+        storyTheme: data.situacionTrabajo,
+        specialInterests: data.interesesHijo,
+        additionalDetails: data.otrosObjetivos || '',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        formData: data, // Guardamos todos los datos del formulario
+      };
+      
+      // Guardamos en localStorage para simular persistencia
+      const requests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
+      requests.push(storyRequest);
+      localStorage.setItem('storyRequests', JSON.stringify(requests));
+      
       toast({
         title: "¡Solicitud enviada con éxito!",
         description: "Te contactaremos en las próximas 24 horas con opciones de trama.",
       });
-      
-      // Guardamos en localStorage para simular persistencia
-      const requests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      const newRequest = {
-        id: Date.now().toString(),
-        ...data,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      };
-      requests.push(newRequest);
-      localStorage.setItem('storyRequests', JSON.stringify(requests));
       
       navigate('/gracias');
     } catch (error) {
@@ -658,3 +667,4 @@ const RequestForm = () => {
 };
 
 export default RequestForm;
+

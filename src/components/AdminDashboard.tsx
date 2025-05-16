@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,11 +5,41 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { RefreshCw, Mail, FileDown, ArrowDownToLine } from 'lucide-react';
+import { RefreshCw, Mail, FileDown, ArrowDownToLine, Eye, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+type FormData = {
+  codigoPedido: string;
+  nombreCompleto: string;
+  nombreHijo: string;
+  edadHijo: string;
+  conQuienVive: string;
+  personalidadHijo: string;
+  dinamicaFamiliar: string;
+  cambiosRecientes: string;
+  situacionTrabajo: string;
+  cuandoOcurre: string;
+  porQueOcurre: string;
+  aquienAfecta: string;
+  preocupacionPadres: string;
+  aspectosDificiles: string;
+  conductaHijo: string;
+  accionesIntentadas: string;
+  resultadosAcciones: string;
+  enseñanzaHistoria: string;
+  objetivos: string[];
+  otrosObjetivos?: string;
+  rutinaHijo: string;
+  interesesHijo: string;
+  cosasNoLeGustan: string;
+  tradicionesValores: string;
+  expresionesFamiliares: string;
+  temasEvitar: string;
+};
 
 type StoryRequest = {
   id: string;
@@ -26,6 +55,7 @@ type StoryRequest = {
   plotOptions?: { id: string; title: string; description: string }[];
   selectedPlot?: string;
   productionDays?: number;
+  formData?: FormData;
 };
 
 const AdminDashboard = () => {
@@ -40,6 +70,7 @@ const AdminDashboard = () => {
   const [isResending, setIsResending] = useState(false);
   const [isSendingPaymentLink, setIsSendingPaymentLink] = useState(false);
   const [productionDays, setProductionDays] = useState(15);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
   const { toast } = useToast();
   
   // Cargar solicitudes de localStorage (simulando una base de datos)
@@ -75,6 +106,20 @@ const AdminDashboard = () => {
     const newOptions = [...plotOptions];
     newOptions[index][field] = value;
     setPlotOptions(newOptions);
+  };
+
+  const handleDeleteRequest = (id: string) => {
+    const updatedRequests = requests.filter(req => req.id !== id);
+    setRequests(updatedRequests);
+    
+    if (selectedRequest?.id === id) {
+      setSelectedRequest(null);
+    }
+    
+    toast({
+      title: "Solicitud eliminada",
+      description: "La solicitud ha sido eliminada correctamente.",
+    });
   };
   
   const handleSendOptions = async () => {
@@ -259,6 +304,190 @@ const AdminDashboard = () => {
     });
   };
   
+  // Componente para mostrar todos los detalles del formulario
+  const FormDetailView = ({ formData }: { formData?: FormData }) => {
+    if (!formData) return <p>No hay datos de formulario disponibles</p>;
+
+    return (
+      <div className="space-y-6 max-h-[70vh] overflow-y-auto p-2">
+        <div>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Información Básica</h3>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Código de pedido</TableCell>
+                <TableCell>{formData.codigoPedido}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Nombre completo</TableCell>
+                <TableCell>{formData.nombreCompleto}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Nombre del hijo/a</TableCell>
+                <TableCell>{formData.nombreHijo}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Edad</TableCell>
+                <TableCell>{formData.edadHijo}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Con quién vive</TableCell>
+                <TableCell>{formData.conQuienVive}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Personalidad</TableCell>
+                <TableCell>{formData.personalidadHijo}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Contexto Familiar</h3>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Dinámica familiar</TableCell>
+                <TableCell>{formData.dinamicaFamiliar}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Cambios recientes</TableCell>
+                <TableCell>{formData.cambiosRecientes}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Situación Actual</h3>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Situación a trabajar</TableCell>
+                <TableCell>{formData.situacionTrabajo}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Cuándo ocurre</TableCell>
+                <TableCell>{formData.cuandoOcurre}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Por qué ocurre</TableCell>
+                <TableCell>{formData.porQueOcurre}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">A quién afecta</TableCell>
+                <TableCell>{formData.aquienAfecta}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Desafíos Identificados</h3>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Preocupación de padres</TableCell>
+                <TableCell>{formData.preocupacionPadres}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Aspectos difíciles</TableCell>
+                <TableCell>{formData.aspectosDificiles}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Conducta del hijo</TableCell>
+                <TableCell>{formData.conductaHijo}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Acciones Intentadas</h3>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Acciones intentadas</TableCell>
+                <TableCell>{formData.accionesIntentadas}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Resultados de acciones</TableCell>
+                <TableCell>{formData.resultadosAcciones}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Enseñanza deseada</TableCell>
+                <TableCell>{formData.enseñanzaHistoria}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Objetivos</h3>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Objetivos seleccionados</TableCell>
+                <TableCell>
+                  <ul className="list-disc pl-5">
+                    {formData.objetivos.map((obj, idx) => (
+                      <li key={idx}>{obj}</li>
+                    ))}
+                  </ul>
+                  {formData.otrosObjetivos && (
+                    <div className="mt-2">
+                      <strong>Otros: </strong>{formData.otrosObjetivos}
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Personalización</h3>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Rutina</TableCell>
+                <TableCell>{formData.rutinaHijo}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Intereses</TableCell>
+                <TableCell>{formData.interesesHijo}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Lo que no le gusta</TableCell>
+                <TableCell>{formData.cosasNoLeGustan}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Tradiciones y valores</TableCell>
+                <TableCell>{formData.tradicionesValores}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Expresiones significativas</TableCell>
+                <TableCell>{formData.expresionesFamiliares}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Otros</h3>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Temas a evitar</TableCell>
+                <TableCell>{formData.temasEvitar}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className="container py-10">
       <h2 className="text-3xl font-bold mb-8">Panel de Administración</h2>
@@ -284,11 +513,77 @@ const AdminDashboard = () => {
                     className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
                       selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
                     }`}
-                    onClick={() => handleSelectRequest(request)}
                   >
-                    <p className="font-medium">{request.name}</p>
-                    <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
-                    <p className="text-sm text-muted-foreground">Tema: {request.storyTheme}</p>
+                    <div className="flex justify-between">
+                      <div className="flex-grow" onClick={() => handleSelectRequest(request)}>
+                        <p className="font-medium">{request.name}</p>
+                        <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
+                        <p className="text-sm text-muted-foreground">Tema: {request.storyTheme}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[800px]">
+                            <DialogHeader>
+                              <DialogTitle>Detalles del Formulario</DialogTitle>
+                              <DialogDescription>
+                                Respuestas completas de {request.name} para {request.childName}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <FormDetailView formData={request.formData} />
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button>Cerrar</Button>
+                              </DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:text-destructive/90"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Confirmar eliminación</DialogTitle>
+                              <DialogDescription>
+                                ¿Estás seguro que deseas eliminar la solicitud de {request.childName}? Esta acción no se puede deshacer.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={(e) => e.stopPropagation()}>
+                                Cancelar
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteRequest(request.id);
+                                }}
+                              >
+                                Eliminar
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
                     <div className="flex justify-between items-center">
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(request.createdAt).toLocaleDateString()}
@@ -309,11 +604,74 @@ const AdminDashboard = () => {
                     className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
                       selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
                     }`}
-                    onClick={() => handleSelectRequest(request)}
                   >
-                    <p className="font-medium">{request.name}</p>
-                    <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
-                    <p className="text-sm text-muted-foreground">Tema: {request.storyTheme}</p>
+                    <div className="flex justify-between">
+                      <div className="flex-grow" onClick={() => handleSelectRequest(request)}>
+                        <p className="font-medium">{request.name}</p>
+                        <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
+                        <p className="text-sm text-muted-foreground">Tema: {request.storyTheme}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[800px]">
+                            <DialogHeader>
+                              <DialogTitle>Detalles del Formulario</DialogTitle>
+                              <DialogDescription>
+                                Respuestas completas de {request.name} para {request.childName}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <FormDetailView formData={request.formData} />
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button>Cerrar</Button>
+                              </DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:text-destructive/90"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Confirmar eliminación</DialogTitle>
+                              <DialogDescription>
+                                ¿Estás seguro que deseas eliminar la solicitud de {request.childName}? Esta acción no se puede deshacer.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button variant="outline">Cancelar</Button>
+                              </DialogClose>
+                              <Button 
+                                variant="destructive" 
+                                onClick={() => handleDeleteRequest(request.id)}
+                              >
+                                Eliminar
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
                     <div className="flex justify-between items-center">
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(request.createdAt).toLocaleDateString()}
@@ -338,20 +696,83 @@ const AdminDashboard = () => {
                     className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
                       selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
                     }`}
-                    onClick={() => handleSelectRequest(request)}
                   >
-                    <p className="font-medium">{request.name}</p>
-                    <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        request.status === 'option_selected' ? 'bg-amber-100 text-amber-700' :
-                        request.status === 'payment_created' ? 'bg-blue-100 text-blue-700' :
-                        'bg-purple-100 text-purple-700'
-                      }`}>
-                        {request.status === 'option_selected' ? 'Opción seleccionada' :
-                         request.status === 'payment_created' ? 'Pago creado' :
-                         'Pago pendiente'}
-                      </span>
+                    <div className="flex justify-between">
+                      <div className="flex-grow" onClick={() => handleSelectRequest(request)}>
+                        <p className="font-medium">{request.name}</p>
+                        <p className="text-sm text-muted-foreground">Niño/a: {request.childName}, {request.childAge} años</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            request.status === 'option_selected' ? 'bg-amber-100 text-amber-700' :
+                            request.status === 'payment_created' ? 'bg-blue-100 text-blue-700' :
+                            'bg-purple-100 text-purple-700'
+                          }`}>
+                            {request.status === 'option_selected' ? 'Opción seleccionada' :
+                             request.status === 'payment_created' ? 'Pago creado' :
+                             'Pago pendiente'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[800px]">
+                            <DialogHeader>
+                              <DialogTitle>Detalles del Formulario</DialogTitle>
+                              <DialogDescription>
+                                Respuestas completas de {request.name} para {request.childName}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <FormDetailView formData={request.formData} />
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button>Cerrar</Button>
+                              </DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:text-destructive/90"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Confirmar eliminación</DialogTitle>
+                              <DialogDescription>
+                                ¿Estás seguro que deseas eliminar la solicitud de {request.childName}? Esta acción no se puede deshacer.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button variant="outline">Cancelar</Button>
+                              </DialogClose>
+                              <Button 
+                                variant="destructive" 
+                                onClick={() => handleDeleteRequest(request.id)}
+                              >
+                                Eliminar
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -372,10 +793,73 @@ const AdminDashboard = () => {
                     className={`p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors ${
                       selectedRequest?.id === request.id ? 'bg-muted border-primary' : ''
                     }`}
-                    onClick={() => handleSelectRequest(request)}
                   >
-                    <p className="font-medium">{request.name}</p>
-                    <p className="text-sm text-muted-foreground">Niño/a: {request.childName}</p>
+                    <div className="flex justify-between">
+                      <div className="flex-grow" onClick={() => handleSelectRequest(request)}>
+                        <p className="font-medium">{request.name}</p>
+                        <p className="text-sm text-muted-foreground">Niño/a: {request.childName}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[800px]">
+                            <DialogHeader>
+                              <DialogTitle>Detalles del Formulario</DialogTitle>
+                              <DialogDescription>
+                                Respuestas completas de {request.name} para {request.childName}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <FormDetailView formData={request.formData} />
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button>Cerrar</Button>
+                              </DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:text-destructive/90"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Confirmar eliminación</DialogTitle>
+                              <DialogDescription>
+                                ¿Estás seguro que deseas eliminar la solicitud de {request.childName}? Esta acción no se puede deshacer.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button variant="outline">Cancelar</Button>
+                              </DialogClose>
+                              <Button 
+                                variant="destructive" 
+                                onClick={() => handleDeleteRequest(request.id)}
+                              >
+                                Eliminar
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
                     <div className="flex justify-between items-center">
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(request.createdAt).toLocaleDateString()}
@@ -400,22 +884,49 @@ const AdminDashboard = () => {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-xl font-bold">Detalles de la Solicitud</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedRequest.createdAt).toLocaleDateString()} - {selectedRequest.name}
+                    </p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    selectedRequest.status === 'pending' ? 'bg-rasti-yellow/20 text-amber-700' :
-                    selectedRequest.status === 'options_sent' ? 'bg-rasti-blue/20 text-rasti-blue' :
-                    selectedRequest.status === 'option_selected' ? 'bg-amber-100/20 text-amber-700' :
-                    selectedRequest.status === 'payment_pending' ? 'bg-purple-100/20 text-purple-700' :
-                    selectedRequest.status === 'payment_created' ? 'bg-blue-100/20 text-blue-700' :
-                    'bg-rasti-green/20 text-rasti-green'
-                  }`}>
-                    {selectedRequest.status === 'pending' ? 'Pendiente' :
-                     selectedRequest.status === 'options_sent' ? 'Opciones Enviadas' :
-                     selectedRequest.status === 'option_selected' ? 'Opción Seleccionada' :
-                     selectedRequest.status === 'payment_pending' ? 'Pago Pendiente' :
-                     selectedRequest.status === 'payment_created' ? 'Pago Creado' :
-                     'Completado'}
-                  </span>
+                  <div className="flex items-center gap-4">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="flex items-center gap-2">
+                          <Eye className="h-4 w-4" />
+                          Ver Formulario Completo
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[800px]">
+                        <DialogHeader>
+                          <DialogTitle>Detalles del Formulario</DialogTitle>
+                          <DialogDescription>
+                            Respuestas completas de {selectedRequest.name} para {selectedRequest.childName}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <FormDetailView formData={selectedRequest.formData} />
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button>Cerrar</Button>
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedRequest.status === 'pending' ? 'bg-rasti-yellow/20 text-amber-700' :
+                      selectedRequest.status === 'options_sent' ? 'bg-rasti-blue/20 text-rasti-blue' :
+                      selectedRequest.status === 'option_selected' ? 'bg-amber-100/20 text-amber-700' :
+                      selectedRequest.status === 'payment_pending' ? 'bg-purple-100/20 text-purple-700' :
+                      selectedRequest.status === 'payment_created' ? 'bg-blue-100/20 text-blue-700' :
+                      'bg-rasti-green/20 text-rasti-green'
+                    }`}>
+                      {selectedRequest.status === 'pending' ? 'Pendiente' :
+                       selectedRequest.status === 'options_sent' ? 'Opciones Enviadas' :
+                       selectedRequest.status === 'option_selected' ? 'Opción Seleccionada' :
+                       selectedRequest.status === 'payment_pending' ? 'Pago Pendiente' :
+                       selectedRequest.status === 'payment_created' ? 'Pago Creado' :
+                       'Completado'}
+                    </span>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
