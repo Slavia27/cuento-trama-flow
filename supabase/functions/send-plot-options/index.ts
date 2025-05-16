@@ -8,7 +8,7 @@ if (!resendApiKey) {
   console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
 }
 
-// Inicializa Resend - NO usar verificación condicional aquí
+// Inicializar Resend directamente
 const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
@@ -55,6 +55,13 @@ serve(async (req) => {
     console.log(`Número de opciones: ${plotOptions.length}`);
     console.log(`¿Es un reenvío?: ${isResend ? "Sí" : "No"}`);
     
+    // Modificar correos de ejemplo para usar el dominio permitido por Resend
+    let toEmail = to;
+    if (to.includes("example.com")) {
+      toEmail = "delivered@resend.dev"; // Usar la dirección de prueba oficial de Resend
+      console.log("Se detectó correo de ejemplo, usando dirección de prueba de Resend:", toEmail);
+    }
+    
     // Generar el HTML para las opciones de trama
     const optionsHTML = plotOptions.map((option, index) => `
       <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9;">
@@ -73,7 +80,7 @@ serve(async (req) => {
     // Enviar el correo usando Resend
     const emailResponse = await resend.emails.send({
       from: "Cuentos Personalizados <notificaciones@rasti.cl>", 
-      to: [to],
+      to: [toEmail],
       subject: isResend ? `[REENVÍO] Opciones de trama para el cuento de ${childName}` : `Opciones de trama para el cuento de ${childName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
