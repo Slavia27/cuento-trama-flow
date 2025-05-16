@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { RefreshCw, Mail, FileImport, ArrowDownToLine } from 'lucide-react';
+import { RefreshCw, Mail, FileDown, ArrowDownToLine } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -579,7 +579,7 @@ const AdminDashboard = () => {
                         onClick={() => handleImportOrder(order)}
                         className="w-full text-rasti-blue border-rasti-blue hover:bg-rasti-blue/10 flex items-center justify-center gap-1"
                       >
-                        <FileImport className="w-3 h-3" />
+                        <FileDown className="w-3 h-3" />
                         Importar orden
                       </Button>
                     </div>
