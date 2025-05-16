@@ -2,8 +2,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// Inicializar Resend con la API key desde las variables de entorno
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resend = new Resend(resendApiKey);
 
+// Definir headers CORS para permitir solicitudes desde el navegador
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -30,11 +33,21 @@ serve(async (req) => {
   }
 
   try {
+    // Verificar que la API key de Resend esté configurada
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY no está configurada. Por favor, añade este secreto en la configuración de funciones de Supabase.");
+    }
+
+    console.log("Recibiendo solicitud para enviar opciones de trama");
+    
     const { to, name, childName, requestId, plotOptions } = await req.json() as EmailRequest;
 
     if (!to || !requestId || !plotOptions || plotOptions.length === 0) {
       throw new Error("Missing required parameters");
     }
+    
+    console.log(`Enviando correo a: ${to} para el cuento de ${childName}`);
+    console.log(`Número de opciones: ${plotOptions.length}`);
     
     // Generar el HTML para las opciones de trama
     const optionsHTML = plotOptions.map((option, index) => `
@@ -47,8 +60,11 @@ serve(async (req) => {
     // Construir URL de selección
     const selectionUrl = `${req.headers.get("origin") || "https://tu-sitio-web.com"}/opciones/${requestId}`;
     
+    console.log("Generando contenido del correo");
+    
+    // Enviar el correo usando Resend
     const emailResponse = await resend.emails.send({
-      from: "Cuentos Personalizados <notificaciones@rasti.cl>", // Updated to use your verified domain
+      from: "Cuentos Personalizados <notificaciones@rasti.cl>", 
       to: [to],
       subject: `Opciones de trama para el cuento de ${childName}`,
       html: `
