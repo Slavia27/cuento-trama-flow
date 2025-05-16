@@ -4,6 +4,12 @@ import { Resend } from "npm:resend@2.0.0";
 
 // Inicializar Resend con la API key desde las variables de entorno
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
+
+// Verificamos que la API key exista antes de inicializar
+if (!resendApiKey) {
+  console.error("ERROR: RESEND_API_KEY no está configurada en las variables de entorno");
+}
+
 const resend = new Resend(resendApiKey);
 
 // Definir headers CORS para permitir solicitudes desde el navegador
