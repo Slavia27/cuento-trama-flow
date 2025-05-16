@@ -74,7 +74,7 @@ const StoryOptions = () => {
         
         if (optionsError) {
           console.error("Error al obtener las opciones de trama:", optionsError);
-          setError("Error al cargar las opciones de trama. Por favor intente nuevamente.");
+          setError("Error al cargar las opciones de trama. Por favor intenta nuevamente.");
           setLoading(false);
           return;
         }
@@ -109,10 +109,10 @@ const StoryOptions = () => {
         
       } catch (err) {
         console.error("Error al cargar la solicitud:", err);
-        setError("Error al cargar la solicitud. Por favor intente nuevamente.");
+        setError("Error al cargar la solicitud. Por favor intenta nuevamente.");
         toast({
           title: "Error",
-          description: "Error al cargar la solicitud. Por favor intente nuevamente.",
+          description: "Error al cargar la solicitud. Por favor intenta nuevamente.",
           variant: "destructive",
         });
       } finally {

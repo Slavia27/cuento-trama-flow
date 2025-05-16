@@ -31,41 +31,49 @@ const PagarPage = () => {
     }
   }, [state]);
   
-  const handleMockPayment = async () => {
+  const handlePayment = async () => {
     if (!state?.requestId) return;
     
     setLoading(true);
     
     try {
-      console.log("Procesando pago simulado para la solicitud:", state.requestId);
+      console.log("Iniciando proceso de pago para la solicitud:", state.requestId);
       
-      // En un entorno real, aquí se conectaría con el API de pagos
-      // Para esta simulación, simplemente actualizamos el estado en Supabase
-      
-      const { error } = await supabase
+      // Obtener información del cliente para el pago
+      const { data: requestData, error: requestError } = await supabase
         .from('story_requests')
-        .update({ 
-          status: 'pagado' 
-        })
-        .eq('request_id', state.requestId);
+        .select('*')
+        .eq('request_id', state.requestId)
+        .single();
       
-      if (error) throw error;
+      if (requestError || !requestData) {
+        throw new Error("No se encontró la información de la solicitud");
+      }
       
-      console.log("Pago simulado procesado correctamente");
-      
-      setConfirmed(true);
-      toast({
-        title: "¡Pago procesado!",
-        description: "Tu pago ha sido procesado correctamente. Comenzaremos a trabajar en tu cuento personalizado.",
+      // Crear preferencia de pago en Mercado Pago a través de la función edge
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          requestId: state.requestId,
+          amount: 24990, // $24.990 CLP
+          description: `Cuento personalizado: ${state.optionTitle || "Opción seleccionada"}`,
+          customerEmail: requestData.email,
+          customerName: requestData.name,
+          redirectUrl: `${window.location.origin}/gracias`
+        }
       });
       
-      // Redirigir después de unos segundos
-      setTimeout(() => {
-        navigate('/gracias');
-      }, 3000);
+      if (error) {
+        console.error("Error al crear la preferencia de pago:", error);
+        throw new Error("No se pudo iniciar el proceso de pago");
+      }
+      
+      console.log("Preferencia de pago creada:", data);
+      
+      // Redirigir a la página de pago de Mercado Pago
+      window.location.href = data.data.init_point;
       
     } catch (err: any) {
-      console.error("Error al procesar el pago simulado:", err);
+      console.error("Error al procesar el pago:", err);
       setError("Hubo un problema al procesar tu pago. Por favor, inténtalo nuevamente.");
       toast({
         title: "Error en el pago",
@@ -132,7 +140,7 @@ const PagarPage = () => {
                 <div className="pt-4 border-t">
                   <Button 
                     className="w-full bg-rasti-blue"
-                    onClick={handleMockPayment}
+                    onClick={handlePayment}
                     disabled={loading}
                   >
                     {loading ? (
@@ -141,11 +149,11 @@ const PagarPage = () => {
                         Procesando...
                       </>
                     ) : (
-                      'Pagar Ahora'
+                      'Pagar con Mercado Pago'
                     )}
                   </Button>
                   <p className="text-center text-sm text-muted-foreground mt-4">
-                    Este es un simulador de pago para propósitos de demostración. En un entorno real, aquí se conectaría con una pasarela de pago.
+                    Serás redirigido a Mercado Pago para completar tu compra de forma segura.
                   </p>
                 </div>
               </Card>
