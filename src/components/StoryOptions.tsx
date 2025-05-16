@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Loader2 } from 'lucide-react';
 
 type StoryOption = {
@@ -35,6 +34,7 @@ const StoryOptions = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Cargar solicitud y opciones desde Supabase
   useEffect(() => {
@@ -47,6 +47,8 @@ const StoryOptions = () => {
           setLoading(false);
           return;
         }
+
+        console.log("Cargando solicitud con ID:", requestId);
 
         // Obtener la solicitud de Supabase
         const { data: requestData, error: requestError } = await supabase
@@ -62,6 +64,8 @@ const StoryOptions = () => {
           return;
         }
 
+        console.log("Datos de la solicitud obtenidos:", requestData);
+
         // Obtener las opciones de trama para esta solicitud
         const { data: optionsData, error: optionsError } = await supabase
           .from('plot_options')
@@ -74,6 +78,8 @@ const StoryOptions = () => {
           setLoading(false);
           return;
         }
+
+        console.log("Opciones de trama obtenidas:", optionsData);
 
         // Formatear los datos para el componente
         const formattedRequest: StoryRequest = {
@@ -137,6 +143,9 @@ const StoryOptions = () => {
     try {
       if (!requestId) return;
       
+      setIsSubmitting(true);
+      console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${requestId}`);
+      
       // Actualizar la selección en Supabase
       const { error: updateError } = await supabase
         .from('story_requests')
@@ -147,9 +156,11 @@ const StoryOptions = () => {
         .eq('request_id', requestId);
       
       if (updateError) {
+        console.error("Error al actualizar la selección:", updateError);
         throw new Error(updateError.message);
       }
 
+      console.log("Selección guardada correctamente");
       const selectedOptionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       
       toast({
@@ -173,6 +184,8 @@ const StoryOptions = () => {
         description: "Hubo un error al guardar tu selección. Por favor intenta nuevamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -268,9 +281,16 @@ const StoryOptions = () => {
         <Button
           className="bg-rasti-blue hover:bg-rasti-blue/80 text-white px-8"
           onClick={handleConfirmSelection}
-          disabled={!selectedOption}
+          disabled={!selectedOption || isSubmitting}
         >
-          Confirmar Selección y Continuar
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            'Confirmar Selección y Continuar'
+          )}
         </Button>
       </div>
     </div>

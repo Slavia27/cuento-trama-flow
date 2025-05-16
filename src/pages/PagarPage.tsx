@@ -1,333 +1,157 @@
 
 import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Loader2, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertCircle, Info } from 'lucide-react';
+
+interface LocationState {
+  requestId: string;
+  optionId: string;
+  optionTitle: string;
+}
 
 const PagarPage = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [requestData, setRequestData] = useState<any>(null);
-  const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentError, setPaymentError] = useState<any>(null);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<string>('');
   
-  // Obtener datos de la opción seleccionada del estado de navegación o URL params
+  const state = location.state as LocationState;
+  
   useEffect(() => {
-    console.log("Location state:", location.state);
-    console.log("Search params:", Object.fromEntries(searchParams.entries()));
-    
-    // Intentar cargar datos del estado de navegación
-    const state = location.state as { 
-      requestId?: string; 
-      optionId?: string;
-      optionTitle?: string;
-    } | undefined;
-    
-    // O intentar cargar datos de los query params
-    const requestId = state?.requestId || searchParams.get('requestId');
-    const optionId = state?.optionId || searchParams.get('optionId');
-    const optionTitle = state?.optionTitle || searchParams.get('optionTitle');
-    
-    if (requestId && optionId) {
-      // Intentamos cargar datos de localStorage
-      const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      const request = savedRequests.find((req: any) => req.id === requestId);
-      
-      if (request) {
-        // Encontrar el título de la opción seleccionada si no se proporcionó
-        const foundOptionTitle = optionTitle || 
-                      request.plotOptions?.find((opt: any) => opt.id === optionId)?.title || 
-                      'Opción seleccionada';
-                            
-        setRequestData({
-          ...request,
-          selectedPlot: optionId, // Asegúrate que selectedPlot esté establecido con optionId
-          optionTitle: foundOptionTitle
-        });
-        setError(null);
-      } else {
-        setError("No se encontró la información de tu solicitud con la opción seleccionada.");
-        toast({
-          title: "Error",
-          description: "No se encontró la información de tu solicitud.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      setError("Falta información requerida. Debes seleccionar una opción primero.");
-      toast({
-        title: "Información requerida",
-        description: "Por favor selecciona una opción de trama primero.",
-        variant: "destructive",
-      });
+    if (!state?.requestId || !state?.optionId) {
+      setError("No se encontró la información de tu solicitud con la opción seleccionada.");
     }
-  }, [location, searchParams, toast]);
+  }, [state]);
   
-  const handlePayment = async () => {
-    if (!requestData) {
-      toast({
-        title: "Error",
-        description: "No hay información de solicitud para procesar el pago.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleMockPayment = async () => {
+    if (!state?.requestId) return;
     
-    setIsLoading(true);
-    setPaymentError(null);
-    setProcessingStatus('Conectando con Mercado Pago...');
+    setLoading(true);
     
     try {
-      // Llamar a nuestro edge function para crear el pago con Mercado Pago
-      setProcessingStatus('Creando preferencia de pago...');
-      const { data, error: invokeError } = await supabase.functions.invoke('create-payment', {
-        body: {
-          requestId: requestData.id,
-          amount: 23788, // Monto en pesos chilenos (sin puntos ni comas)
-          description: `Cuento personalizado para ${requestData.childName}`,
-          customerEmail: requestData.email || 'cliente@ejemplo.com', // Usamos email del cliente o un valor por defecto
-          customerName: requestData.name || 'Cliente', // Usamos nombre del cliente o un valor por defecto
-          redirectUrl: `${window.location.origin}/gracias`,
-        },
-      });
+      console.log("Procesando pago simulado para la solicitud:", state.requestId);
       
-      if (invokeError) {
-        console.error("Edge function invoke error:", invokeError);
-        throw new Error(invokeError.message || "Error al invocar la función de pago");
-      }
+      // En un entorno real, aquí se conectaría con el API de pagos
+      // Para esta simulación, simplemente actualizamos el estado en Supabase
       
-      console.log("Payment response:", data);
+      const { error } = await supabase
+        .from('story_requests')
+        .update({ 
+          status: 'pagado' 
+        })
+        .eq('request_id', state.requestId);
       
-      if (!data || !data.success) {
-        console.error("Unsuccessful payment response:", data);
-        throw new Error(data?.error || "Respuesta de pago inválida");
-      }
+      if (error) throw error;
       
-      if (data.data && data.data.init_point) {
-        setProcessingStatus('Redirigiendo al checkout de Mercado Pago...');
-        
-        // Guardamos el estado de la solicitud
-        const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-        const updatedRequests = savedRequests.map((req: any) => {
-          if (req.id === requestData.id) {
-            return {
-              ...req,
-              status: 'payment_created',
-              paymentId: data.data.id,
-            };
-          }
-          return req;
-        });
-        
-        localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
-        
-        // Set payment URL and redirect after a brief delay
-        setPaymentUrl(data.data.init_point);
-        setTimeout(() => {
-          // Redirigir a la página de pago de Mercado Pago
-          console.log("Redirecting to Mercado Pago:", data.data.init_point);
-          window.location.href = data.data.init_point;
-        }, 500);
-      } else {
-        throw new Error("No se pudo obtener la URL de pago");
-      }
-    } catch (err: any) {
-      console.error("Error creating payment:", err);
+      console.log("Pago simulado procesado correctamente");
       
-      setPaymentError(err);
-      
-      // Extract error details from Supabase response if available
-      if (err.response) {
-        try {
-          const responseData = await err.response.json();
-          setPaymentError({
-            message: err.message,
-            status: err.response.status,
-            data: responseData
-          });
-        } catch (e) {
-          setPaymentError({
-            message: err.message,
-            status: err.response?.status,
-            text: await err.response?.text()
-          });
-        }
-      } else if (typeof err === 'object' && err !== null) {
-        // Handle error from edge function
-        setPaymentError(err);
-      }
-      
-      setError(err.message || "Hubo un error al procesar el pago. Por favor intente nuevamente.");
-      toast({
-        title: "Error de pago",
-        description: err.message || "Hubo un error al procesar el pago. Por favor intente nuevamente.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      setProcessingStatus('');
-    }
-  };
-  
-  const handleManualPaymentSuccess = () => {
-    // Esta función simula un pago exitoso para pruebas
-    setIsLoading(true);
-    
-    // Simulamos un proceso de pago
-    setTimeout(() => {
-      setIsLoading(false);
+      setConfirmed(true);
       toast({
         title: "¡Pago procesado!",
         description: "Tu pago ha sido procesado correctamente. Comenzaremos a trabajar en tu cuento personalizado.",
       });
       
-      // Actualizar el estado de la solicitud a completado
-      const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      const updatedRequests = savedRequests.map((req: any) => {
-        if (req.id === requestData.id) {
-          return {
-            ...req,
-            status: 'completed',
-          };
-        }
-        return req;
+      // Redirigir después de unos segundos
+      setTimeout(() => {
+        navigate('/gracias');
+      }, 3000);
+      
+    } catch (err: any) {
+      console.error("Error al procesar el pago simulado:", err);
+      setError("Hubo un problema al procesar tu pago. Por favor, inténtalo nuevamente.");
+      toast({
+        title: "Error en el pago",
+        description: "No se pudo procesar tu pago. Por favor, inténtalo nuevamente o contacta con soporte.",
+        variant: "destructive",
       });
-      
-      localStorage.setItem('storyRequests', JSON.stringify(updatedRequests));
-      
-      // Redirigir a una página de agradecimiento
-      navigate('/gracias', { state: { fromPayment: true } });
-    }, 2000);
+    } finally {
+      setLoading(false);
+    }
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-grow container py-10">
-        <h1 className="text-3xl font-bold mb-6">Finalizar tu compra</h1>
-        
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        {paymentError && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error de Mercado Pago</AlertTitle>
-            <AlertDescription>
-              <p>{paymentError.message || "Error desconocido"}</p>
-              {paymentError.status && <p>Estado: {paymentError.status}</p>}
-              {paymentError.details && (
-                <details className="mt-2">
-                  <summary>Detalles técnicos</summary>
-                  <pre className="text-xs mt-2 p-2 bg-black/10 rounded overflow-x-auto">
-                    {JSON.stringify(paymentError.details, null, 2)}
-                  </pre>
-                </details>
-              )}
-              {paymentError.data && (
-                <details className="mt-2">
-                  <summary>Datos adicionales</summary>
-                  <pre className="text-xs mt-2 p-2 bg-black/10 rounded overflow-x-auto">
-                    {JSON.stringify(paymentError.data, null, 2)}
-                  </pre>
-                </details>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {requestData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="p-6">
-              <h2 className="text-xl font-medium mb-4">Resumen del pedido</h2>
+      <main className="flex-grow bg-gray-50 py-12">
+        <div className="container max-w-2xl mx-auto px-4">
+          {error ? (
+            <Card className="p-6 text-center">
+              <h2 className="text-2xl font-bold text-red-500 mb-4">Error</h2>
+              <p className="mb-6">{error}</p>
+              <Button onClick={() => navigate('/')} className="bg-rasti-blue">
+                Volver al inicio
+              </Button>
+            </Card>
+          ) : confirmed ? (
+            <Card className="p-8 text-center">
+              <div className="flex justify-center mb-4">
+                <CheckCircle className="h-16 w-16 text-green-500" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">¡Pago Confirmado!</h2>
+              <p className="mb-6">
+                Tu pago ha sido procesado correctamente. Comenzaremos a trabajar en tu cuento personalizado.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Serás redirigido en unos momentos...
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              <h1 className="text-3xl font-bold text-center">Completar tu Compra</h1>
               
-              <div className="space-y-4">
-                <div className="border-b pb-4">
-                  <p className="font-medium">Cuento personalizado</p>
-                  <p className="text-muted-foreground">Historia única adaptada para {requestData.childName}</p>
-                  {requestData.optionTitle && (
-                    <p className="text-sm mt-2">Opción seleccionada: <span className="font-medium">{requestData.optionTitle}</span></p>
-                  )}
-                </div>
-                
-                <div className="py-4 border-b">
-                  <div className="flex justify-between">
-                    <p>Subtotal</p>
-                    <p>$19.990</p>
+              <Card className="p-6">
+                <h2 className="font-semibold text-xl mb-4">Resumen de tu Pedido</h2>
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between border-b pb-2">
+                    <span className="text-muted-foreground">Opción seleccionada:</span>
+                    <span className="font-medium">{state?.optionTitle || "Opción no disponible"}</span>
                   </div>
-                  <div className="flex justify-between mt-2">
-                    <p>IVA</p>
-                    <p>$3.798</p>
+                  <div className="flex justify-between border-b pb-2">
+                    <span className="text-muted-foreground">ID de solicitud:</span>
+                    <span className="font-medium">{state?.requestId || "No disponible"}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-2">
+                    <span className="text-muted-foreground">Producto:</span>
+                    <span className="font-medium">Cuento Personalizado</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-semibold">
+                    <span>Total:</span>
+                    <span>$24.990 CLP</span>
                   </div>
                 </div>
                 
-                <div className="flex justify-between pt-4 font-bold">
-                  <p>Total</p>
-                  <p>$23.788</p>
+                <div className="pt-4 border-t">
+                  <Button 
+                    className="w-full bg-rasti-blue"
+                    onClick={handleMockPayment}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Procesando...
+                      </>
+                    ) : (
+                      'Pagar Ahora'
+                    )}
+                  </Button>
+                  <p className="text-center text-sm text-muted-foreground mt-4">
+                    Este es un simulador de pago para propósitos de demostración. En un entorno real, aquí se conectaría con una pasarela de pago.
+                  </p>
                 </div>
-              </div>
-            </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-medium mb-4">Información de pago</h2>
-              
-              <div className="space-y-4">
-                <div className="bg-muted p-4 rounded-md mb-4">
-                  <p className="text-sm">Al hacer clic en "Pagar ahora", serás redirigido a Mercado Pago para completar tu compra de forma segura.</p>
-                </div>
-                
-                {processingStatus && (
-                  <Alert className="mb-4">
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Procesando</AlertTitle>
-                    <AlertDescription>{processingStatus}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button 
-                  className="w-full bg-story-mint hover:bg-story-mint/80 text-black font-bold py-3"
-                  onClick={handlePayment}
-                  disabled={isLoading || !requestData}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Procesando...
-                    </>
-                  ) : (
-                    "Pagar ahora con Mercado Pago"
-                  )}
-                </Button>
-                
-                {/* Botón alternativo para pruebas - se puede eliminar en producción */}
-                <Button 
-                  variant="outline"
-                  className="w-full mt-2 border-dashed border-muted-foreground/50 text-muted-foreground"
-                  onClick={handleManualPaymentSuccess}
-                  disabled={isLoading || !requestData}
-                >
-                  Simular pago exitoso (solo para pruebas)
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
+              </Card>
+            </div>
+          )}
+        </div>
       </main>
       
       <Footer />
