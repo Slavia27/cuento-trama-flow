@@ -824,7 +824,7 @@ const AdminDashboard = () => {
                 )}
                 
                 {/* Cambiar estado del pedido - nuevo componente para etapas de producción */}
-                {(selectedRequest.status === 'pagado' || selectedRequest.status === 'produccion' || selectedRequest.status === 'envio') && (
+                {(selectedRequest?.status === 'pagado' || selectedRequest?.status === 'produccion' || selectedRequest?.status === 'envio' || selectedRequest?.status === 'completado') && (
                   <div className="mb-6 p-4 border rounded-md bg-muted/30">
                     <h4 className="text-lg font-medium mb-3">Estado de la Solicitud</h4>
                     <div className="flex flex-wrap gap-2">
@@ -857,7 +857,7 @@ const AdminDashboard = () => {
                 )}
                 
                 {/* Sección para días de producción */}
-                {(selectedRequest.status === 'pagado' || selectedRequest.status === 'produccion' || selectedRequest.status === 'envio') && (
+                {(selectedRequest?.status === 'pagado' || selectedRequest?.status === 'produccion' || selectedRequest?.status === 'envio' || selectedRequest?.status === 'completado') && (
                   <div className="mb-6 p-4 border rounded-md bg-muted/30">
                     <h4 className="text-lg font-medium mb-3">Producción</h4>
                     <div className="flex items-center gap-4">
