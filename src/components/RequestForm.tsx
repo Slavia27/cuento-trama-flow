@@ -653,13 +653,14 @@ const RequestForm = () => {
               />
             </div>
             
-            <div className="pt-6 bg-white">
+            {/* Botón de Enviar */}
+            <div className="mt-8">
               <Button 
                 type="submit" 
-                className="w-full bg-story-blue hover:bg-story-blue/80 text-lg py-6" 
+                className="w-full bg-story-blue hover:bg-story-blue/80 text-white text-lg py-6 font-semibold" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+                {isSubmitting ? 'Enviando...' : 'Enviar Formulario'}
               </Button>
             </div>
           </form>
