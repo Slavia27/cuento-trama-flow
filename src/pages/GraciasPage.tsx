@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -87,6 +88,7 @@ const GraciasPage = () => {
   const isProcessingPayment = paymentStatus === 'pending' || paymentStatus === 'in_process';
   const isPaymentSuccessful = paymentStatus === 'approved';
   const isPaymentRejected = paymentStatus === 'rejected';
+  const isNoPayment = paymentStatus === 'no_payment';
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -149,7 +151,7 @@ const GraciasPage = () => {
                 <Link to="/pagar">Intentar pagar nuevamente</Link>
               </Button>
             </>
-          ) : (
+          ) : isNoPayment ? (
             <>
               <div className="w-16 h-16 bg-story-mint/20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -164,6 +166,23 @@ const GraciasPage = () => {
                 Hemos recibido tu información y estamos emocionados de crear un cuento personalizado especial.
                 En las próximas 24 horas, te enviaremos un correo electrónico con las opciones de trama para que puedas elegir la que más te guste.
               </p>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="h-8 w-8 text-red-500" />
+              </div>
+              
+              <h1 className="text-3xl font-bold mb-4">Pago no completado</h1>
+              
+              <p className="text-lg text-muted-foreground mb-6">
+                El pago no se ha completado correctamente. Por favor, intenta nuevamente o contacta a nuestro servicio de atención al cliente
+                si necesitas ayuda.
+              </p>
+              
+              <Button className="bg-story-blue hover:bg-story-blue/80 mb-4">
+                <Link to="/pagar">Intentar pagar nuevamente</Link>
+              </Button>
             </>
           )}
           
