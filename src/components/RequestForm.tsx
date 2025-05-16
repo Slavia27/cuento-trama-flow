@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -133,7 +134,7 @@ const RequestForm = () => {
     setIsSubmitting(true);
     
     try {
-      console.log('Datos del formulario:', data);
+      console.log('Enviando datos del formulario:', data);
       
       // Generate a unique request ID
       const requestId = `req-${Date.now()}`;
@@ -152,8 +153,10 @@ const RequestForm = () => {
         form_data: data, // Store the complete form data
       };
       
+      console.log('Objeto a guardar en Supabase:', storyRequest);
+      
       // Save to Supabase
-      const { error } = await supabase
+      const { data: savedData, error } = await supabase
         .from('story_requests')
         .insert(storyRequest);
       
@@ -161,6 +164,8 @@ const RequestForm = () => {
         console.error('Error al guardar en Supabase:', error);
         throw new Error(error.message);
       }
+      
+      console.log('Datos guardados correctamente:', savedData);
       
       toast({
         title: "¡Solicitud enviada con éxito!",

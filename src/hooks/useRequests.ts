@@ -38,7 +38,7 @@ export const useRequests = () => {
 
       // Convert data to our StoryRequest format
       const formattedRequests: StoryRequest[] = data.map(req => ({
-        id: req.request_id,
+        id: req.request_id || req.id,  // Use request_id if available, otherwise fall back to id
         name: req.name,
         email: req.email,
         childName: req.child_name,
@@ -131,15 +131,19 @@ export const useRequests = () => {
         req.id === requestId ? { ...req, status: newStatus } : req
       ));
       
-      const statusLabels = {
+      const statusLabels: Record<string, string> = {
         'produccion': 'Producción',
         'envio': 'Envío',
-        'completado': 'Completado'
+        'completado': 'Completado',
+        'pendiente': 'Pendiente',
+        'opciones': 'Opciones',
+        'seleccion': 'Seleccionada',
+        'pagado': 'Pagado'
       };
       
       toast({
         title: "Estado actualizado",
-        description: `La solicitud ha sido actualizada al estado: ${statusLabels[newStatus]}.`,
+        description: `La solicitud ha sido actualizada al estado: ${statusLabels[newStatus] || newStatus}.`,
       });
       
       return true;

@@ -1,14 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useRequests } from '@/hooks/useRequests';
 import { StoryRequest } from '@/types/story';
 import RequestList from '@/components/admin/RequestList';
 import RequestDetails from '@/components/admin/RequestDetails';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState<StoryRequest | null>(null);
-  const { requests, deleteRequest, updateRequestStatus, updateProductionDays, loadRequests } = useRequests();
+  const { requests, deleteRequest, updateRequestStatus, updateProductionDays, loadRequests, isLoading } = useRequests();
+  
+  // Load requests when the component mounts
+  useEffect(() => {
+    loadRequests();
+  }, []);
   
   const handleSelectRequest = (request: StoryRequest) => {
     setSelectedRequest(request);
@@ -33,12 +40,15 @@ const AdminDashboard = () => {
     <div className="container py-10">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold">Panel de Administración</h2>
-        <button 
+        <Button 
           onClick={handleRefresh}
-          className="px-4 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+          className="px-4 py-2 flex items-center gap-2"
+          disabled={isLoading}
+          variant="outline"
         >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           Actualizar datos
-        </button>
+        </Button>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

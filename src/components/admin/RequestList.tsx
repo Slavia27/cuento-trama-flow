@@ -33,9 +33,9 @@ const RequestList = ({ requests, selectedRequest, onSelectRequest, onDeleteReque
       <h3 className="text-xl font-bold mb-4">Solicitudes</h3>
       
       <Tabs defaultValue="pendiente">
-        <TabsList className="w-full mb-4 flex flex-wrap gap-1">
+        <TabsList className="grid grid-cols-4 sm:grid-cols-7 gap-1 mb-4">
           {statusTabs.map(status => (
-            <TabsTrigger key={status} value={status} className="text-xs md:text-sm flex-1 whitespace-nowrap">
+            <TabsTrigger key={status} value={status} className="text-xs py-1 px-2 whitespace-nowrap">
               {getStatusLabel(status)}
             </TabsTrigger>
           ))}
