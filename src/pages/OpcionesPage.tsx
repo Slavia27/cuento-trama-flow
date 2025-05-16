@@ -10,7 +10,9 @@ const OpcionesPage = () => {
       <Header />
       
       <main className="flex-grow bg-gray-50 py-8">
-        <StoryOptions />
+        <div className="container max-w-4xl mx-auto px-4">
+          <StoryOptions />
+        </div>
       </main>
       
       <Footer />

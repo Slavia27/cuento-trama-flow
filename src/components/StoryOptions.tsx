@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -35,18 +36,7 @@ const StoryOptions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Verificar si el requestId existe en localStorage
-  const checkRequestExists = (requestId: string) => {
-    try {
-      const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-      return savedRequests.some((req: StoryRequest) => req.id === requestId);
-    } catch (err) {
-      console.error("Error checking if request exists:", err);
-      return false;
-    }
-  };
-  
-  // Load request and options from localStorage
+  // Cargar solicitud y opciones desde localStorage
   useEffect(() => {
     const loadRequest = async () => {
       setLoading(true);
@@ -58,95 +48,33 @@ const StoryOptions = () => {
           return;
         }
 
-        // Verificar primero si la solicitud existe
-        const requestExists = checkRequestExists(requestId);
-        
-        if (!requestExists) {
-          console.log("Request not found, attempting to create demo data for testing");
-          
-          // Para fines de demostración, crear datos de prueba si no existe la solicitud
-          const demoRequest = {
-            id: requestId,
-            name: "Usuario de Prueba",
-            childName: "Niño/a",
-            status: "opciones" as StoryStatus,
-            plotOptions: [
-              {
-                id: "opt-1",
-                title: "Aventura en el Bosque Mágico",
-                description: "Un cuento donde tu pequeño/a descubre un bosque encantado lleno de criaturas mágicas y aprende sobre la amistad y el valor."
-              },
-              {
-                id: "opt-2",
-                title: "El Viaje Espacial",
-                description: "Una historia de exploración donde tu pequeño/a viaja por el espacio, visita planetas misteriosos y encuentra nuevos amigos estelares."
-              },
-              {
-                id: "opt-3",
-                title: "Los Piratas del Mar Azul",
-                description: "Una emocionante aventura de piratas donde tu pequeño/a descubre un tesoro escondido mientras aprende sobre el trabajo en equipo."
-              }
-            ]
-          };
-          
-          // Guardar la solicitud de demostración en localStorage
-          const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-          savedRequests.push(demoRequest);
-          localStorage.setItem('storyRequests', JSON.stringify(savedRequests));
-          
-          // Usar la solicitud de demostración
-          setRequest(demoRequest);
-          setLoading(false);
-          return;
-        }
-        
-        // Si la solicitud existe, cargarla normalmente
+        // Obtener todas las solicitudes guardadas
         const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
-        console.log("All saved requests:", savedRequests);
-        console.log("Looking for request ID:", requestId);
+        console.log("Solicitudes guardadas:", savedRequests);
         
+        // Buscar la solicitud específica
         const foundRequest = savedRequests.find((req: StoryRequest) => req.id === requestId);
-        console.log("Found request:", foundRequest);
+        console.log("Solicitud encontrada:", foundRequest);
         
         if (foundRequest) {
-          // Make sure plotOptions exists and has items
+          // Si se encuentra la solicitud pero no tiene opciones de trama
           if (!foundRequest.plotOptions || foundRequest.plotOptions.length === 0) {
-            console.log("Request found but has no plot options");
-            
-            // Para fines de demostración, agregar opciones si no existen
-            foundRequest.plotOptions = [
-              {
-                id: "opt-1",
-                title: "Aventura en el Bosque Mágico",
-                description: "Un cuento donde tu pequeño/a descubre un bosque encantado lleno de criaturas mágicas y aprende sobre la amistad y el valor."
-              },
-              {
-                id: "opt-2",
-                title: "El Viaje Espacial",
-                description: "Una historia de exploración donde tu pequeño/a viaja por el espacio, visita planetas misteriosos y encuentra nuevos amigos estelares."
-              },
-              {
-                id: "opt-3",
-                title: "Los Piratas del Mar Azul",
-                description: "Una emocionante aventura de piratas donde tu pequeño/a descubre un tesoro escondido mientras aprende sobre el trabajo en equipo."
-              }
-            ];
-            
-            // Actualizar en localStorage
-            localStorage.setItem('storyRequests', JSON.stringify(savedRequests));
-          }
-          
-          setRequest(foundRequest);
-          if (foundRequest.selectedPlot) {
-            setSelectedOption(foundRequest.selectedPlot);
+            console.log("La solicitud no tiene opciones de trama configuradas");
+            setError("Esta solicitud no tiene opciones de trama configuradas aún. Por favor, contacta al administrador.");
+          } else {
+            console.log("Cargando solicitud con opciones:", foundRequest);
+            setRequest(foundRequest);
+            if (foundRequest.selectedPlot) {
+              setSelectedOption(foundRequest.selectedPlot);
+            }
           }
         } else {
-          // Si no se encuentra la solicitud (esto no debería ocurrir después del checkRequestExists)
-          console.error("Error inesperado: La solicitud no se encontró después de verificar que existe");
-          setError("Error al cargar la solicitud. Por favor intente nuevamente.");
+          // Si no se encuentra la solicitud, mostrar un mensaje de error claro
+          console.log("No se encontró la solicitud con ID:", requestId);
+          setError("No se encontró la solicitud. Verifica el enlace e intenta nuevamente.");
         }
       } catch (err) {
-        console.error("Error loading request:", err);
+        console.error("Error al cargar la solicitud:", err);
         setError("Error al cargar la solicitud. Por favor intente nuevamente.");
         toast({
           title: "Error",
@@ -162,7 +90,7 @@ const StoryOptions = () => {
   }, [requestId, toast]);
   
   const handleOptionSelect = (optionId: string) => {
-    console.log("Option selected:", optionId);
+    console.log("Opción seleccionada:", optionId);
     setSelectedOption(optionId);
     setError(null);
   };
@@ -183,7 +111,7 @@ const StoryOptions = () => {
       
       // En una implementación real, aquí enviarías la selección al backend
       // Por ahora, solo actualizamos en localStorage
-      console.log("Saving selection:", selectedOption);
+      console.log("Guardando selección:", selectedOption);
       
       const savedRequests = JSON.parse(localStorage.getItem('storyRequests') || '[]');
       const updatedRequests = savedRequests.map((req: StoryRequest) => {
