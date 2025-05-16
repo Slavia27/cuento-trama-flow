@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -654,8 +653,12 @@ const RequestForm = () => {
               />
             </div>
             
-            <div className="pt-4">
-              <Button type="submit" className="w-full bg-story-blue hover:bg-story-blue/80" disabled={isSubmitting}>
+            <div className="pt-6 sticky bottom-0 bg-white pb-2">
+              <Button 
+                type="submit" 
+                className="w-full bg-story-blue hover:bg-story-blue/80 text-lg py-6" 
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
               </Button>
             </div>
@@ -667,4 +670,3 @@ const RequestForm = () => {
 };
 
 export default RequestForm;
-
