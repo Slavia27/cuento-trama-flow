@@ -85,7 +85,7 @@ export const useRequests = () => {
             const updatedRecord = payload.new;
             console.log("Updated record:", updatedRecord);
             
-            // Update the specific request in the state
+            // Update the specific request in the state immediately
             setRequests(prev => {
               const updatedRequests = prev.map(req => {
                 if (req.id === updatedRecord.request_id || req.id === updatedRecord.id) {

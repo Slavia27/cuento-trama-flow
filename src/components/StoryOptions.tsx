@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -162,7 +163,7 @@ const StoryOptions = () => {
       setError(null);
       console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${requestId}`);
       
-      // Update the selection in the database without expecting a return value
+      // Update the selection in the database
       const { error: updateError } = await supabase
         .from('story_requests')
         .update({
@@ -176,9 +177,9 @@ const StoryOptions = () => {
         throw new Error(`Error de base de datos: ${updateError.message}`);
       }
       
-      console.log("Actualización exitosa");
+      console.log("Actualización exitosa en la base de datos");
       
-      // Verify the update was successful
+      // Verify the update was successful by fetching the updated data
       const { data: verifyData, error: verifyError } = await supabase
         .from('story_requests')
         .select('status, selected_plot')
@@ -187,8 +188,14 @@ const StoryOptions = () => {
       
       if (verifyError) {
         console.error("Error al verificar actualización:", verifyError);
-      } else {
-        console.log("Verificación de actualización:", verifyData);
+        throw new Error("Error al verificar la actualización en la base de datos");
+      }
+      
+      console.log("Verificación de actualización exitosa:", verifyData);
+      
+      if (verifyData.selected_plot !== selectedOption || verifyData.status !== 'seleccion') {
+        console.error("La verificación falló - los datos no coinciden");
+        throw new Error("La selección no se guardó correctamente");
       }
       
       // Find the selected option data
@@ -209,7 +216,7 @@ const StoryOptions = () => {
       
       toast({
         title: "¡Selección guardada!",
-        description: "Tu selección ha sido guardada exitosamente.",
+        description: "Tu selección ha sido guardada exitosamente en la base de datos.",
       });
       
     } catch (err: any) {
