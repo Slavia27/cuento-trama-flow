@@ -147,16 +147,22 @@ const StoryOptions = () => {
       return;
     }
     
+    if (!requestId) {
+      setError("ID de solicitud no válido");
+      toast({
+        title: "Error",
+        description: "ID de solicitud no válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
+      setError(null);
       console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${requestId}`);
       
-      if (!requestId) {
-        throw new Error("ID de solicitud no válido");
-      }
-      
-      // Actualización directa con verificación inmediata
-      console.log("Actualizando selección y estado en la base de datos...");
+      // Update the selection in the database
       const { data: updateData, error: updateError } = await supabase
         .from('story_requests')
         .update({
@@ -168,36 +174,17 @@ const StoryOptions = () => {
         .single();
       
       if (updateError) {
-        console.error("Error al actualizar:", updateError);
-        throw new Error("No se pudo guardar la selección. Por favor intenta nuevamente.");
+        console.error("Error al actualizar la base de datos:", updateError);
+        throw new Error(`Error de base de datos: ${updateError.message}`);
       }
       
-      console.log("Actualización completada exitosamente:", updateData);
+      console.log("Actualización exitosa:", updateData);
       
-      // Verificar que la actualización se guardó correctamente
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('story_requests')
-        .select('selected_plot, status')
-        .eq('request_id', requestId)
-        .single();
-      
-      if (verifyError || !verifyData) {
-        console.error("Error al verificar la actualización:", verifyError);
-      } else {
-        console.log("Verificación exitosa:", verifyData);
-        
-        if (verifyData.selected_plot === selectedOption && verifyData.status === 'seleccion') {
-          console.log("✅ Selección guardada y verificada correctamente");
-        } else {
-          console.warn("⚠️ Los datos verificados no coinciden con lo esperado");
-        }
-      }
-      
-      // Buscar la opción seleccionada para mostrarla en el mensaje de éxito
+      // Find the selected option data
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       setSelectedOptionData(optionData || null);
       
-      // Actualizar estado local
+      // Update local state
       if (request) {
         setRequest({
           ...request,
@@ -206,7 +193,7 @@ const StoryOptions = () => {
         });
       }
       
-      // Marcar la selección como exitosa para mostrar la pantalla de confirmación
+      // Mark selection as successful
       setSelectionSuccessful(true);
       
       toast({
@@ -216,10 +203,11 @@ const StoryOptions = () => {
       
     } catch (err: any) {
       console.error("Error saving selection:", err);
-      setError("Hubo un error al guardar tu selección. Por favor intenta nuevamente.");
+      const errorMessage = err.message || "Hubo un error al guardar tu selección. Por favor intenta nuevamente.";
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: "Hubo un error al guardar tu selección. Por favor intenta nuevamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -328,7 +316,13 @@ const StoryOptions = () => {
             Ahora puedes continuar al proceso de pago para finalizar tu pedido.
           </p>
           <Button 
-            onClick={handleContinueToPay}
+            onClick={() => navigate('/pagar', { 
+              state: { 
+                requestId,
+                optionId: selectedOption,
+                optionTitle: selectedOptionData?.title
+              } 
+            })}
             className="bg-rasti-blue hover:bg-rasti-blue/80 w-full max-w-sm"
             size="lg"
           >

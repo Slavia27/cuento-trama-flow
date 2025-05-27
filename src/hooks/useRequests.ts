@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,7 +38,7 @@ export const useRequests = () => {
 
       // Convert data to our StoryRequest format
       const formattedRequests: StoryRequest[] = data.map(req => ({
-        id: req.request_id || req.id,  // Use request_id if available, otherwise fall back to id
+        id: req.request_id || req.id,
         name: req.name,
         email: req.email,
         childName: req.child_name,
@@ -69,7 +70,7 @@ export const useRequests = () => {
   useEffect(() => {
     loadRequests();
     
-    // Subscribe to changes in story_requests table with more specific filtering
+    // Subscribe to changes in story_requests table
     const channel = supabase
       .channel('story_requests_realtime')
       .on('postgres_changes', 
@@ -81,20 +82,21 @@ export const useRequests = () => {
         (payload) => {
           console.log("Realtime update received:", payload);
           
-          // Handle different types of changes
           if (payload.eventType === 'UPDATE') {
             const updatedRecord = payload.new;
             console.log("Updated record:", updatedRecord);
             
             // Update the specific request in the state
             setRequests(prev => prev.map(req => {
-              if (req.id === updatedRecord.request_id) {
-                return {
+              if (req.id === updatedRecord.request_id || req.id === updatedRecord.id) {
+                const updatedRequest = {
                   ...req,
                   status: updatedRecord.status as StoryStatus,
                   selectedPlot: updatedRecord.selected_plot || undefined,
                   productionDays: updatedRecord.production_days || 15
                 };
+                console.log("Updating request:", updatedRequest);
+                return updatedRequest;
               }
               return req;
             }));
