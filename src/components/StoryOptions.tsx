@@ -31,7 +31,7 @@ const StoryOptions = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [request, setRequest] = useState<StoryRequest | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,7 +89,7 @@ const StoryOptions = () => {
           name: requestData.name,
           childName: requestData.child_name,
           status: requestData.status as StoryStatus,
-          selectedPlot: requestData.selected_plot || null,
+          selectedPlot: requestData.selected_plot || undefined,
           plotOptions: optionsData && optionsData.length > 0 
             ? optionsData.map(opt => ({
                 id: opt.option_id,
@@ -156,9 +156,9 @@ const StoryOptions = () => {
         throw new Error("ID de solicitud no válido");
       }
       
-      // Método simplificado para actualizar - enfoque más directo
-      console.log("Intentando actualizar con método simplificado...");
-      const { error: directUpdateError } = await supabase
+      // Método de actualización simple y directo
+      console.log("Actualizando selección y estado en la base de datos...");
+      const { error: updateError } = await supabase
         .from('story_requests')
         .update({
           selected_plot: selectedOption,
@@ -166,73 +166,12 @@ const StoryOptions = () => {
         })
         .eq('request_id', requestId);
       
-      if (directUpdateError) {
-        console.error("Error en actualización directa:", directUpdateError);
-        
-        // Intento fallback - Actualizar por separado
-        console.log("Intento de respaldo: Actualizando por separado...");
-        
-        // Primero actualizar solo la selección
-        const { error: plotError } = await supabase
-          .from('story_requests')
-          .update({ selected_plot: selectedOption })
-          .eq('request_id', requestId);
-          
-        if (plotError) {
-          console.error("Error al actualizar la selección:", plotError);
-        } else {
-          console.log("Selección guardada correctamente");
-        }
-        
-        // Luego actualizar solo el estado
-        const { error: statusError } = await supabase
-          .from('story_requests')
-          .update({ status: 'seleccion' })
-          .eq('request_id', requestId);
-          
-        if (statusError) {
-          console.error("Error al actualizar el estado:", statusError);
-          throw new Error("No se pudo guardar la selección. Por favor intenta nuevamente.");
-        } else {
-          console.log("Estado actualizado correctamente");
-        }
-      } else {
-        console.log("Actualización directa completada correctamente");
+      if (updateError) {
+        console.error("Error al actualizar:", updateError);
+        throw new Error("No se pudo guardar la selección. Por favor intenta nuevamente.");
       }
       
-      // Verificar que los cambios se hayan guardado
-      const { data: checkData, error: checkError } = await supabase
-        .from('story_requests')
-        .select('status, selected_plot')
-        .eq('request_id', requestId)
-        .single();
-        
-      if (checkError) {
-        console.error("Error al verificar el estado:", checkError);
-      } else {
-        console.log("Verificación de estado:", checkData);
-        
-        if (checkData.status !== 'seleccion' || checkData.selected_plot !== selectedOption) {
-          console.warn("La verificación muestra que los datos no se actualizaron correctamente");
-          console.warn("Estado actual:", checkData.status);
-          console.warn("Selección actual:", checkData.selected_plot);
-          
-          // Intento final forzado (solo si la verificación muestra datos inconsistentes)
-          console.log("Intento final forzado...");
-          const { error: finalError } = await supabase.rpc('force_update_selection', { 
-            req_id: requestId,
-            selection: selectedOption
-          });
-          
-          if (finalError) {
-            console.error("Error en el intento final:", finalError);
-          } else {
-            console.log("Intento final completado");
-          }
-        } else {
-          console.log("Verificación exitosa: Los datos se actualizaron correctamente");
-        }
-      }
+      console.log("Actualización completada exitosamente");
       
       // Buscar la opción seleccionada para mostrarla en el mensaje de éxito
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
@@ -398,7 +337,7 @@ const StoryOptions = () => {
       )}
       
       <RadioGroup 
-        value={selectedOption || ""} 
+        value={selectedOption} 
         onValueChange={handleOptionSelect}
         className="space-y-6 mb-8"
       >
