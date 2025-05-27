@@ -162,23 +162,21 @@ const StoryOptions = () => {
       setError(null);
       console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${requestId}`);
       
-      // Update the selection in the database
-      const { data: updateData, error: updateError } = await supabase
+      // Update the selection in the database without expecting a return value
+      const { error: updateError } = await supabase
         .from('story_requests')
         .update({
           selected_plot: selectedOption,
           status: 'seleccion'
         })
-        .eq('request_id', requestId)
-        .select()
-        .single();
+        .eq('request_id', requestId);
       
       if (updateError) {
         console.error("Error al actualizar la base de datos:", updateError);
         throw new Error(`Error de base de datos: ${updateError.message}`);
       }
       
-      console.log("Actualización exitosa:", updateData);
+      console.log("Actualización exitosa");
       
       // Find the selected option data
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
