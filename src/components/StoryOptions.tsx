@@ -178,6 +178,19 @@ const StoryOptions = () => {
       
       console.log("Actualización exitosa");
       
+      // Verify the update was successful
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('story_requests')
+        .select('status, selected_plot')
+        .eq('request_id', requestId)
+        .single();
+      
+      if (verifyError) {
+        console.error("Error al verificar actualización:", verifyError);
+      } else {
+        console.log("Verificación de actualización:", verifyData);
+      }
+      
       // Find the selected option data
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       setSelectedOptionData(optionData || null);

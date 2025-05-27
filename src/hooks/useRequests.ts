@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -70,7 +69,7 @@ export const useRequests = () => {
   useEffect(() => {
     loadRequests();
     
-    // Subscribe to changes in story_requests table
+    // Subscribe to changes in story_requests table with improved real-time handling
     const channel = supabase
       .channel('story_requests_realtime')
       .on('postgres_changes', 
@@ -87,36 +86,73 @@ export const useRequests = () => {
             console.log("Updated record:", updatedRecord);
             
             // Update the specific request in the state
-            setRequests(prev => prev.map(req => {
-              if (req.id === updatedRecord.request_id || req.id === updatedRecord.id) {
-                const updatedRequest = {
-                  ...req,
-                  status: updatedRecord.status as StoryStatus,
-                  selectedPlot: updatedRecord.selected_plot || undefined,
-                  productionDays: updatedRecord.production_days || 15
-                };
-                console.log("Updating request:", updatedRequest);
-                return updatedRequest;
-              }
-              return req;
-            }));
+            setRequests(prev => {
+              const updatedRequests = prev.map(req => {
+                if (req.id === updatedRecord.request_id || req.id === updatedRecord.id) {
+                  const updatedRequest = {
+                    ...req,
+                    status: updatedRecord.status as StoryStatus,
+                    selectedPlot: updatedRecord.selected_plot || undefined,
+                    productionDays: updatedRecord.production_days || 15
+                  };
+                  console.log("Updating request in state:", updatedRequest);
+                  return updatedRequest;
+                }
+                return req;
+              });
+              
+              console.log("Updated requests state:", updatedRequests);
+              return updatedRequests;
+            });
             
             // Show toast notification for important status changes
             if (updatedRecord.status === 'seleccion' && updatedRecord.selected_plot) {
+              console.log("Plot selection detected, showing toast");
               toast({
-                title: "Selección realizada",
+                title: "¡Selección realizada!",
                 description: `${updatedRecord.name} ha seleccionado una opción de trama.`,
               });
             }
-          } else {
-            // For INSERT and DELETE, reload all requests
-            loadRequests();
+          } else if (payload.eventType === 'INSERT') {
+            // For new inserts, add to the beginning of the list
+            const newRecord = payload.new;
+            const newRequest: StoryRequest = {
+              id: newRecord.request_id || newRecord.id,
+              name: newRecord.name,
+              email: newRecord.email,
+              childName: newRecord.child_name,
+              childAge: newRecord.child_age,
+              storyTheme: newRecord.story_theme,
+              specialInterests: newRecord.special_interests || '',
+              additionalDetails: newRecord.additional_details || undefined,
+              status: (newRecord.status || 'pendiente') as StoryStatus,
+              createdAt: newRecord.created_at,
+              selectedPlot: newRecord.selected_plot || undefined,
+              productionDays: newRecord.production_days || 15,
+              formData: newRecord.form_data
+            };
+            
+            setRequests(prev => [newRequest, ...prev]);
+            
+            toast({
+              title: "Nueva solicitud",
+              description: `${newRecord.name} ha enviado una nueva solicitud.`,
+            });
+          } else if (payload.eventType === 'DELETE') {
+            // Remove the deleted request
+            const deletedRecord = payload.old;
+            setRequests(prev => prev.filter(req => 
+              req.id !== deletedRecord.request_id && req.id !== deletedRecord.id
+            ));
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
       
     return () => {
+      console.log("Removing realtime channel");
       supabase.removeChannel(channel);
     };
   }, [loadRequests, toast]);
