@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Eye } from 'lucide-react';
@@ -34,19 +33,20 @@ const RequestDetails = ({
     fetchPlotOptions
   } = usePlotOptions();
 
+  // Memoize the fetchPlotOptions function to prevent unnecessary re-renders
+  const memoizedFetchPlotOptions = useCallback(async (requestId: string) => {
+    const options = await fetchPlotOptions(requestId);
+    setPlotOptions(options);
+  }, [fetchPlotOptions]);
+
   useEffect(() => {
-    // Fetch plot options when a request is selected
-    const loadPlotOptions = async () => {
-      if (selectedRequest) {
-        const options = await fetchPlotOptions(selectedRequest.id);
-        setPlotOptions(options);
-      } else {
-        setPlotOptions([]);
-      }
-    };
-    
-    loadPlotOptions();
-  }, [selectedRequest, fetchPlotOptions]);
+    // Only fetch plot options when selectedRequest changes and has an id
+    if (selectedRequest?.id) {
+      memoizedFetchPlotOptions(selectedRequest.id);
+    } else {
+      setPlotOptions([]);
+    }
+  }, [selectedRequest?.id, memoizedFetchPlotOptions]);
 
   const handleSendPlotOptions = async (options: { title: string; description: string }[]) => {
     if (!selectedRequest) return;

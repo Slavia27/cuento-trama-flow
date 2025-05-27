@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -156,22 +155,43 @@ const StoryOptions = () => {
         throw new Error("ID de solicitud no válido");
       }
       
-      // Método de actualización simple y directo
+      // Actualización directa con verificación inmediata
       console.log("Actualizando selección y estado en la base de datos...");
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('story_requests')
         .update({
           selected_plot: selectedOption,
           status: 'seleccion'
         })
-        .eq('request_id', requestId);
+        .eq('request_id', requestId)
+        .select()
+        .single();
       
       if (updateError) {
         console.error("Error al actualizar:", updateError);
         throw new Error("No se pudo guardar la selección. Por favor intenta nuevamente.");
       }
       
-      console.log("Actualización completada exitosamente");
+      console.log("Actualización completada exitosamente:", updateData);
+      
+      // Verificar que la actualización se guardó correctamente
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('story_requests')
+        .select('selected_plot, status')
+        .eq('request_id', requestId)
+        .single();
+      
+      if (verifyError || !verifyData) {
+        console.error("Error al verificar la actualización:", verifyError);
+      } else {
+        console.log("Verificación exitosa:", verifyData);
+        
+        if (verifyData.selected_plot === selectedOption && verifyData.status === 'seleccion') {
+          console.log("✅ Selección guardada y verificada correctamente");
+        } else {
+          console.warn("⚠️ Los datos verificados no coinciden con lo esperado");
+        }
+      }
       
       // Buscar la opción seleccionada para mostrarla en el mensaje de éxito
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);

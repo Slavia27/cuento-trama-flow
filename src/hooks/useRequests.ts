@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
@@ -12,7 +11,7 @@ export const useRequests = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     try {
       console.log("Fetching story requests from Supabase...");
       setIsLoading(true);
@@ -65,19 +64,52 @@ export const useRequests = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadRequests();
     
-    // Subscribe to changes in story_requests table
+    // Subscribe to changes in story_requests table with more specific filtering
     const channel = supabase
-      .channel('story_requests_changes')
+      .channel('story_requests_realtime')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'story_requests' }, 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'story_requests' 
+        }, 
         (payload) => {
           console.log("Realtime update received:", payload);
-          loadRequests();
+          
+          // Handle different types of changes
+          if (payload.eventType === 'UPDATE') {
+            const updatedRecord = payload.new;
+            console.log("Updated record:", updatedRecord);
+            
+            // Update the specific request in the state
+            setRequests(prev => prev.map(req => {
+              if (req.id === updatedRecord.request_id) {
+                return {
+                  ...req,
+                  status: updatedRecord.status as StoryStatus,
+                  selectedPlot: updatedRecord.selected_plot || undefined,
+                  productionDays: updatedRecord.production_days || 15
+                };
+              }
+              return req;
+            }));
+            
+            // Show toast notification for important status changes
+            if (updatedRecord.status === 'seleccion' && updatedRecord.selected_plot) {
+              toast({
+                title: "Selección realizada",
+                description: `${updatedRecord.name} ha seleccionado una opción de trama.`,
+              });
+            }
+          } else {
+            // For INSERT and DELETE, reload all requests
+            loadRequests();
+          }
         }
       )
       .subscribe();
@@ -85,7 +117,7 @@ export const useRequests = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loadRequests, toast]);
 
   const deleteRequest = async (id: string) => {
     try {
