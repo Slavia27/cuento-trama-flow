@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -85,10 +86,11 @@ export const useRequests = () => {
             const updatedRecord = payload.new;
             console.log("Updated record:", updatedRecord);
             
-            // Update the specific request in the state immediately
+            // Update the specific request in the state immediately using both possible ID fields
             setRequests(prev => {
               const updatedRequests = prev.map(req => {
-                if (req.id === updatedRecord.request_id || req.id === updatedRecord.id) {
+                const recordId = updatedRecord.request_id || updatedRecord.id;
+                if (req.id === recordId) {
                   const updatedRequest = {
                     ...req,
                     status: updatedRecord.status as StoryStatus,
@@ -141,9 +143,8 @@ export const useRequests = () => {
           } else if (payload.eventType === 'DELETE') {
             // Remove the deleted request
             const deletedRecord = payload.old;
-            setRequests(prev => prev.filter(req => 
-              req.id !== deletedRecord.request_id && req.id !== deletedRecord.id
-            ));
+            const deletedId = deletedRecord.request_id || deletedRecord.id;
+            setRequests(prev => prev.filter(req => req.id !== deletedId));
           }
         }
       )
@@ -159,10 +160,11 @@ export const useRequests = () => {
 
   const deleteRequest = async (id: string) => {
     try {
+      // Try to delete using both possible ID fields
       const { error } = await supabase
         .from('story_requests')
         .delete()
-        .eq('request_id', id);
+        .or(`request_id.eq.${id},id.eq.${id}`);
         
       if (error) throw error;
       
@@ -189,10 +191,11 @@ export const useRequests = () => {
 
   const updateRequestStatus = async (requestId: string, newStatus: StoryStatus) => {
     try {
+      // Update using both possible ID fields for compatibility
       const { error } = await supabase
         .from('story_requests')
         .update({ status: newStatus })
-        .eq('request_id', requestId);
+        .or(`request_id.eq.${requestId},id.eq.${requestId}`);
         
       if (error) throw error;
       
@@ -230,10 +233,11 @@ export const useRequests = () => {
 
   const updateProductionDays = async (requestId: string, days: number) => {
     try {
+      // Update using both possible ID fields for compatibility
       const { error } = await supabase
         .from('story_requests')
         .update({ production_days: days })
-        .eq('request_id', requestId);
+        .or(`request_id.eq.${requestId},id.eq.${requestId}`);
         
       if (error) throw error;
       

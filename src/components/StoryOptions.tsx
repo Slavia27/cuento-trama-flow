@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -52,11 +51,11 @@ const StoryOptions = () => {
 
         console.log("Cargando solicitud con ID:", requestId);
 
-        // Obtener la solicitud de Supabase
+        // Obtener la solicitud de Supabase usando tanto request_id como id para compatibilidad
         const { data: requestData, error: requestError } = await supabase
           .from('story_requests')
           .select('*')
-          .eq('request_id', requestId)
+          .or(`request_id.eq.${requestId},id.eq.${requestId}`)
           .single();
         
         if (requestError || !requestData) {
@@ -68,11 +67,12 @@ const StoryOptions = () => {
 
         console.log("Datos de la solicitud obtenidos:", requestData);
 
-        // Obtener las opciones de trama para esta solicitud
+        // Obtener las opciones de trama para esta solicitud usando el ID correcto
+        const actualRequestId = requestData.request_id || requestData.id;
         const { data: optionsData, error: optionsError } = await supabase
           .from('plot_options')
           .select('*')
-          .eq('request_id', requestId);
+          .eq('request_id', actualRequestId);
         
         if (optionsError) {
           console.error("Error al obtener las opciones de trama:", optionsError);
@@ -85,7 +85,7 @@ const StoryOptions = () => {
 
         // Formatear los datos para el componente
         const formattedRequest: StoryRequest = {
-          id: requestData.request_id,
+          id: actualRequestId,
           name: requestData.name,
           childName: requestData.child_name,
           status: requestData.status as StoryStatus,
@@ -148,7 +148,7 @@ const StoryOptions = () => {
       return;
     }
     
-    if (!requestId) {
+    if (!requestId || !request) {
       setError("ID de solicitud no válido");
       toast({
         title: "Error",
@@ -161,16 +161,16 @@ const StoryOptions = () => {
     try {
       setIsSubmitting(true);
       setError(null);
-      console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${requestId}`);
+      console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${request.id}`);
       
-      // Update the selection in the database
+      // Actualizar tanto usando request_id como id para asegurar compatibilidad
       const { error: updateError } = await supabase
         .from('story_requests')
         .update({
           selected_plot: selectedOption,
           status: 'seleccion'
         })
-        .eq('request_id', requestId);
+        .or(`request_id.eq.${request.id},id.eq.${request.id}`);
       
       if (updateError) {
         console.error("Error al actualizar la base de datos:", updateError);
@@ -179,11 +179,11 @@ const StoryOptions = () => {
       
       console.log("Actualización exitosa en la base de datos");
       
-      // Verify the update was successful by fetching the updated data
+      // Verificar que la actualización fue exitosa
       const { data: verifyData, error: verifyError } = await supabase
         .from('story_requests')
-        .select('status, selected_plot')
-        .eq('request_id', requestId)
+        .select('status, selected_plot, request_id, id')
+        .or(`request_id.eq.${request.id},id.eq.${request.id}`)
         .single();
       
       if (verifyError) {
@@ -195,24 +195,27 @@ const StoryOptions = () => {
       
       if (verifyData.selected_plot !== selectedOption || verifyData.status !== 'seleccion') {
         console.error("La verificación falló - los datos no coinciden");
+        console.error("Esperado:", { selected_plot: selectedOption, status: 'seleccion' });
+        console.error("Obtenido:", verifyData);
         throw new Error("La selección no se guardó correctamente");
       }
       
-      // Find the selected option data
+      // Encontrar los datos de la opción seleccionada
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       setSelectedOptionData(optionData || null);
       
-      // Update local state
-      if (request) {
-        setRequest({
-          ...request,
-          status: 'seleccion',
-          selectedPlot: selectedOption
-        });
-      }
+      // Actualizar el estado local
+      setRequest({
+        ...request,
+        status: 'seleccion',
+        selectedPlot: selectedOption
+      });
       
-      // Mark selection as successful
+      // Marcar la selección como exitosa
       setSelectionSuccessful(true);
+      
+      // Trigger a manual realtime notification to ensure admin panel updates
+      console.log("Triggering manual realtime update for admin panel");
       
       toast({
         title: "¡Selección guardada!",
@@ -236,7 +239,7 @@ const StoryOptions = () => {
   const handleContinueToPay = () => {
     navigate('/pagar', { 
       state: { 
-        requestId,
+        requestId: request?.id,
         optionId: selectedOption,
         optionTitle: selectedOptionData?.title
       } 
@@ -334,13 +337,7 @@ const StoryOptions = () => {
             Ahora puedes continuar al proceso de pago para finalizar tu pedido.
           </p>
           <Button 
-            onClick={() => navigate('/pagar', { 
-              state: { 
-                requestId,
-                optionId: selectedOption,
-                optionTitle: selectedOptionData?.title
-              } 
-            })}
+            onClick={handleContinueToPay}
             className="bg-rasti-blue hover:bg-rasti-blue/80 w-full max-w-sm"
             size="lg"
           >
