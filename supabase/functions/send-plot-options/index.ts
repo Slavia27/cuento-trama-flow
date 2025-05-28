@@ -40,6 +40,7 @@ interface EmailRequest {
   childName: string;
   requestId: string;
   plotOptions: PlotOption[];
+  illustrationStyle?: string; // New optional field
   resend?: boolean;
 }
 
@@ -57,7 +58,7 @@ serve(async (req) => {
 
     console.log("Recibiendo solicitud para enviar opciones de trama");
     
-    const { to, name, childName, requestId, plotOptions, resend: isResend = false } = await req.json() as EmailRequest;
+    const { to, name, childName, requestId, plotOptions, illustrationStyle, resend: isResend = false } = await req.json() as EmailRequest;
 
     if (!to || !requestId || !plotOptions || plotOptions.length === 0) {
       throw new Error("Missing required parameters");
@@ -65,13 +66,14 @@ serve(async (req) => {
     
     console.log(`Enviando correo a: ${to} para el cuento de ${childName}`);
     console.log(`Número de opciones: ${plotOptions.length}`);
+    console.log(`Estilo de ilustración: ${illustrationStyle || 'No especificado'}`);
     console.log(`¿Es un reenvío?: ${isResend ? "Sí" : "No"}`);
     
     // Guardar en Supabase si no es un reenvío
     if (!isResend) {
       console.log("Guardando opciones en la base de datos");
       
-      // Primero eliminar opciones existentes para este request_id
+      // Primero eliminar opciones existentes para este request_id para evitar duplicados
       const { error: deleteError } = await supabase
         .from('plot_options')
         .delete()
@@ -82,12 +84,18 @@ serve(async (req) => {
         // No lanzar error aquí, continuar con el proceso
       }
       
-      // Ahora insertar las nuevas opciones
-      for (const option of plotOptions) {
+      // Generar IDs únicos basados en timestamp para evitar duplicados
+      const timestamp = Date.now();
+      
+      // Ahora insertar las nuevas opciones con IDs únicos
+      for (let i = 0; i < plotOptions.length; i++) {
+        const option = plotOptions[i];
+        const uniqueId = `${requestId}-opt-${i + 1}-${timestamp}`;
+        
         const { error } = await supabase
           .from('plot_options')
           .insert({
-            option_id: option.id,
+            option_id: uniqueId,
             request_id: requestId,
             title: option.title,
             description: option.description
