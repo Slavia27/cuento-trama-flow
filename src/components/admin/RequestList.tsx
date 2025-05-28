@@ -32,17 +32,21 @@ const RequestList = ({ requests, selectedRequest, onSelectRequest, onDeleteReque
     <Card className="p-4 h-full">
       <h3 className="text-xl font-bold mb-4">Solicitudes</h3>
       
-      <Tabs defaultValue="pendiente">
-        <TabsList className="grid grid-cols-4 sm:grid-cols-7 gap-1 mb-4">
+      <Tabs defaultValue="pendiente" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 h-auto gap-1 mb-4 bg-muted p-1">
           {statusTabs.map(status => (
-            <TabsTrigger key={status} value={status} className="text-xs py-1 px-2 whitespace-nowrap">
+            <TabsTrigger 
+              key={status} 
+              value={status} 
+              className="text-xs px-2 py-2 whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
               {getStatusLabel(status)}
             </TabsTrigger>
           ))}
         </TabsList>
         
         {statusTabs.map(statusTab => (
-          <TabsContent key={statusTab} value={statusTab} className="space-y-2 max-h-[500px] overflow-y-auto">
+          <TabsContent key={statusTab} value={statusTab} className="space-y-2 max-h-[500px] overflow-y-auto mt-4">
             {requests.filter(req => req.status === statusTab).map(request => (
               <RequestItem
                 key={request.id}

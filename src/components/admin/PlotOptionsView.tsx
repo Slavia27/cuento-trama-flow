@@ -25,8 +25,6 @@ const PlotOptionsView = ({
   isResending,
   isSendingPayment
 }: PlotOptionsViewProps) => {
-  const selectedPlot = plotOptions.find(option => option.id === selectedPlotId);
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -59,26 +57,10 @@ const PlotOptionsView = ({
         </div>
       </div>
 
-      {/* Selected Plot Display */}
-      {selectedPlot && status === 'seleccion' && (
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <CardTitle className="text-lg text-green-800">Opción Seleccionada</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <h5 className="font-semibold text-green-900 mb-2">{selectedPlot.title}</h5>
-            <p className="text-green-700 text-sm">{selectedPlot.description}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* All Plot Options */}
+      {/* All Plot Options - simplified to avoid redundancy */}
       <div className="grid gap-3">
         {plotOptions.map((option) => (
-          <Card key={option.id} className={`${option.id === selectedPlotId ? 'ring-2 ring-green-500' : ''}`}>
+          <Card key={option.id} className={`${option.id === selectedPlotId ? 'ring-2 ring-green-500 bg-green-50' : ''}`}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">{option.title}</CardTitle>
@@ -91,7 +73,9 @@ const PlotOptionsView = ({
               </div>
             </CardHeader>
             <CardContent>
-              <CardDescription>{option.description}</CardDescription>
+              <CardDescription className={option.id === selectedPlotId ? 'text-green-700' : ''}>
+                {option.description}
+              </CardDescription>
             </CardContent>
           </Card>
         ))}
