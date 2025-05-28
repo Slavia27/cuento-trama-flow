@@ -169,18 +169,35 @@ const StoryOptions = () => {
       setError(null);
       console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${request.id}`);
       
-      // Usar la nueva función de base de datos para actualizar la selección
-      const { error: updateError } = await supabase.rpc('update_plot_selection', {
-        p_request_id: request.id,
-        p_option_id: selectedOption
-      });
+      // Actualización directa sin usar función RPC
+      const { error: updateError } = await supabase
+        .from('story_requests')
+        .update({ 
+          selected_plot: selectedOption,
+          status: 'seleccion'
+        })
+        .eq('request_id', request.id);
       
       if (updateError) {
         console.error("Error al actualizar la base de datos:", updateError);
         throw new Error(`Error de base de datos: ${updateError.message}`);
       }
       
-      console.log("Actualización exitosa usando función de base de datos");
+      console.log("✅ Actualización exitosa");
+      
+      // También actualizar la tabla plot_options para marcar la opción seleccionada
+      const { error: optionsUpdateError } = await supabase
+        .from('plot_options')
+        .update({ is_selected: false })
+        .eq('request_id', request.id);
+      
+      if (!optionsUpdateError) {
+        await supabase
+          .from('plot_options')
+          .update({ is_selected: true })
+          .eq('option_id', selectedOption)
+          .eq('request_id', request.id);
+      }
       
       // Verificar que la actualización fue exitosa
       const { data: verifyData, error: verifyError } = await supabase
@@ -194,12 +211,12 @@ const StoryOptions = () => {
         throw new Error("Error al verificar la actualización en la base de datos");
       }
       
-      console.log("Verificación de actualización exitosa:", verifyData);
+      console.log("✅ Verificación exitosa:", verifyData);
       
-      if (verifyData.selected_plot !== selectedOption || verifyData.status !== 'seleccion') {
-        console.error("La verificación falló - los datos no coinciden");
-        console.error("Esperado:", { selected_plot: selectedOption, status: 'seleccion' });
-        console.error("Obtenido:", verifyData);
+      if (verifyData.selected_plot !== selectedOption) {
+        console.error("La verificación falló - la selección no se guardó");
+        console.error("Esperado:", selectedOption);
+        console.error("Obtenido:", verifyData.selected_plot);
         throw new Error("La selección no se guardó correctamente");
       }
       
@@ -217,11 +234,11 @@ const StoryOptions = () => {
       // Marcar la selección como exitosa
       setSelectionSuccessful(true);
       
-      console.log("Selección guardada exitosamente con sincronización mejorada");
+      console.log("✅ Selección guardada exitosamente");
       
       toast({
         title: "¡Selección guardada!",
-        description: "Tu selección ha sido guardada exitosamente y sincronizada con el panel de administración.",
+        description: "Tu selección ha sido guardada exitosamente.",
       });
       
     } catch (err: any) {
