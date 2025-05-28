@@ -168,9 +168,9 @@ const StoryOptions = () => {
     try {
       setIsSubmitting(true);
       setError(null);
-      console.log(`🔄 Guardando selección usando función de DB: ${selectedOption} para la solicitud: ${request.id}`);
+      console.log(`🔄 Guardando selección usando función actualizada: ${selectedOption} para la solicitud: ${request.id}`);
       
-      // Usar la función de base de datos que maneja toda la lógica
+      // Usar la función de base de datos actualizada
       const { error: functionError } = await supabase.rpc('update_plot_selection', {
         p_request_id: request.id,
         p_option_id: selectedOption
@@ -183,11 +183,11 @@ const StoryOptions = () => {
       
       console.log("✅ Función de DB ejecutada exitosamente");
       
-      // Esperar un momento antes de verificar para asegurar que la DB se actualice
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Esperar un momento para asegurar que la DB se actualice
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Verificar que la selección se guardó correctamente
-      console.log("🔄 Verificando que la selección se guardó...");
+      // Verificar que la selección se guardó correctamente en story_requests
+      console.log("🔄 Verificando actualización en story_requests...");
       const { data: verifyRequest, error: verifyError } = await supabase
         .from('story_requests')
         .select('status, selected_plot')
@@ -195,25 +195,41 @@ const StoryOptions = () => {
         .single();
       
       if (verifyError) {
-        console.error("❌ Error al verificar:", verifyError);
-        console.log("⚠️ Error en verificación, pero función ejecutada correctamente. Continuando...");
+        console.error("❌ Error al verificar story_requests:", verifyError);
       } else {
-        console.log("🔍 Verificación exitosa:", verifyRequest);
+        console.log("🔍 Verificación story_requests exitosa:", verifyRequest);
         
         if (verifyRequest && verifyRequest.selected_plot !== selectedOption) {
           console.log(`⚠️ Valor esperado: ${selectedOption}, Valor obtenido: ${verifyRequest.selected_plot}`);
-          console.log("⚠️ La selección puede no haberse guardado, pero continuando con la interfaz...");
         }
       }
       
-      // Verificar también las opciones de plot
+      // Verificar también el estado de is_selected en plot_options
+      console.log("🔄 Verificando estado de is_selected en plot_options...");
       const { data: plotOptions, error: plotError } = await supabase
         .from('plot_options')
-        .select('option_id, is_selected')
+        .select('option_id, is_selected, title')
         .eq('request_id', request.id);
       
       if (!plotError) {
-        console.log("🔍 Estado de opciones de plot:", plotOptions);
+        console.log("🔍 Estado completo de plot_options:", plotOptions);
+        
+        const selectedOption_db = plotOptions?.find(opt => opt.is_selected === true);
+        const expectedOption = plotOptions?.find(opt => opt.option_id === selectedOption);
+        
+        if (selectedOption_db) {
+          console.log("✅ Opción marcada como seleccionada en DB:", selectedOption_db);
+        } else {
+          console.log("⚠️ Ninguna opción está marcada como seleccionada en DB");
+        }
+        
+        if (expectedOption && expectedOption.is_selected) {
+          console.log("✅ La opción esperada está correctamente marcada como seleccionada");
+        } else if (expectedOption) {
+          console.log("⚠️ La opción esperada existe pero no está marcada como seleccionada:", expectedOption);
+        }
+      } else {
+        console.error("❌ Error al verificar plot_options:", plotError);
       }
       
       // Encontrar los datos de la opción seleccionada
@@ -230,7 +246,7 @@ const StoryOptions = () => {
       // Marcar la selección como exitosa
       setSelectionSuccessful(true);
       
-      console.log("✅ Selección procesada exitosamente");
+      console.log("✅ Proceso de selección completado exitosamente");
       
       toast({
         title: "¡Selección guardada!",
