@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -119,6 +120,9 @@ const RequestDetails = ({
     }
   };
 
+  // Find the selected plot option
+  const selectedPlotOption = plotOptions.find(option => option.id === selectedRequest?.selectedPlot);
+
   if (!selectedRequest) {
     return (
       <div className="h-full flex items-center justify-center flex-col">
@@ -193,6 +197,32 @@ const RequestDetails = ({
         <div className="mb-6">
           <p className="text-sm font-medium text-muted-foreground mb-1">Detalles Adicionales</p>
           <p className="p-3 bg-muted rounded-md">{selectedRequest.additionalDetails}</p>
+        </div>
+      )}
+
+      {/* Selected Plot and Illustration Style Section */}
+      {(selectedPlotOption || selectedRequest.illustrationStyle) && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h4 className="text-lg font-semibold text-green-800 mb-3">Selecciones del Cliente</h4>
+          
+          {selectedPlotOption && (
+            <div className="mb-4">
+              <p className="text-sm font-medium text-green-700 mb-1">Trama Seleccionada:</p>
+              <div className="bg-white p-3 rounded border border-green-200">
+                <h5 className="font-semibold text-green-900 mb-1">{selectedPlotOption.title}</h5>
+                <p className="text-green-700 text-sm">{selectedPlotOption.description}</p>
+              </div>
+            </div>
+          )}
+          
+          {selectedRequest.illustrationStyle && (
+            <div>
+              <p className="text-sm font-medium text-green-700 mb-1">Estilo de Ilustración:</p>
+              <div className="bg-white p-3 rounded border border-green-200">
+                <p className="text-green-900 font-medium">{selectedRequest.illustrationStyle}</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
       
