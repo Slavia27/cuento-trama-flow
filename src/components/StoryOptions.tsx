@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -168,68 +167,84 @@ const StoryOptions = () => {
     try {
       setIsSubmitting(true);
       setError(null);
-      console.log(`🔄 Guardando selección usando función actualizada: ${selectedOption} para la solicitud: ${request.id}`);
+      console.log(`🔄 Intentando guardar selección: ${selectedOption} para la solicitud: ${request.id}`);
       
-      // Usar la función de base de datos actualizada
-      const { error: functionError } = await supabase.rpc('update_plot_selection', {
+      // Método 1: Usar la función RPC actualizada
+      console.log("📞 Usando función RPC update_plot_selection...");
+      const { error: rpcError } = await supabase.rpc('update_plot_selection', {
         p_request_id: request.id,
         p_option_id: selectedOption
       });
       
-      if (functionError) {
-        console.error("❌ Error en función de DB:", functionError);
-        throw new Error(`Error al guardar selección: ${functionError.message}`);
+      if (rpcError) {
+        console.error("❌ Error en función RPC:", rpcError);
+        
+        // Método 2: Fallback - Actualización directa en dos pasos
+        console.log("🔄 Intentando fallback con actualizaciones directas...");
+        
+        // Paso 1: Actualizar story_requests
+        const { error: storyError } = await supabase
+          .from('story_requests')
+          .update({ 
+            selected_plot: selectedOption,
+            status: 'seleccion'
+          })
+          .eq('request_id', request.id);
+        
+        if (storyError) {
+          console.error("❌ Error actualizando story_requests:", storyError);
+          throw new Error(`Error al actualizar la solicitud: ${storyError.message}`);
+        }
+        
+        // Paso 2: Actualizar plot_options
+        const { error: plotError1 } = await supabase
+          .from('plot_options')
+          .update({ is_selected: false })
+          .eq('request_id', request.id);
+        
+        if (plotError1) {
+          console.error("❌ Error desmarcando opciones:", plotError1);
+        }
+        
+        const { error: plotError2 } = await supabase
+          .from('plot_options')
+          .update({ is_selected: true })
+          .eq('option_id', selectedOption)
+          .eq('request_id', request.id);
+        
+        if (plotError2) {
+          console.error("❌ Error marcando opción seleccionada:", plotError2);
+        }
+        
+        console.log("✅ Fallback completado");
+      } else {
+        console.log("✅ Función RPC ejecutada exitosamente");
       }
       
-      console.log("✅ Función de DB ejecutada exitosamente");
+      // Esperar un momento para que se propague la actualización
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Esperar un momento para asegurar que la DB se actualice
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Verificar que todo se actualizó correctamente
+      console.log("🔄 Verificando actualizaciones...");
       
-      // Verificar que la selección se guardó correctamente en story_requests
-      console.log("🔄 Verificando actualización en story_requests...");
-      const { data: verifyRequest, error: verifyError } = await supabase
+      const { data: updatedRequest, error: verifyError } = await supabase
         .from('story_requests')
         .select('status, selected_plot')
         .eq('request_id', request.id)
         .single();
       
       if (verifyError) {
-        console.error("❌ Error al verificar story_requests:", verifyError);
+        console.error("❌ Error en verificación:", verifyError);
       } else {
-        console.log("🔍 Verificación story_requests exitosa:", verifyRequest);
+        console.log("✅ Estado actualizado:", updatedRequest);
         
-        if (verifyRequest && verifyRequest.selected_plot !== selectedOption) {
-          console.log(`⚠️ Valor esperado: ${selectedOption}, Valor obtenido: ${verifyRequest.selected_plot}`);
-        }
-      }
-      
-      // Verificar también el estado de is_selected en plot_options
-      console.log("🔄 Verificando estado de is_selected en plot_options...");
-      const { data: plotOptions, error: plotError } = await supabase
-        .from('plot_options')
-        .select('option_id, is_selected, title')
-        .eq('request_id', request.id);
-      
-      if (!plotError) {
-        console.log("🔍 Estado completo de plot_options:", plotOptions);
-        
-        const selectedOption_db = plotOptions?.find(opt => opt.is_selected === true);
-        const expectedOption = plotOptions?.find(opt => opt.option_id === selectedOption);
-        
-        if (selectedOption_db) {
-          console.log("✅ Opción marcada como seleccionada en DB:", selectedOption_db);
+        if (updatedRequest.selected_plot === selectedOption && updatedRequest.status === 'seleccion') {
+          console.log("✅ Verificación exitosa - Todo actualizado correctamente");
         } else {
-          console.log("⚠️ Ninguna opción está marcada como seleccionada en DB");
+          console.log("⚠️ Posible inconsistencia detectada");
+          console.log(`Expected plot: ${selectedOption}, Got: ${updatedRequest.selected_plot}`);
+          console.log(`Expected status: seleccion, Got: ${updatedRequest.status}`);
         }
-        
-        if (expectedOption && expectedOption.is_selected) {
-          console.log("✅ La opción esperada está correctamente marcada como seleccionada");
-        } else if (expectedOption) {
-          console.log("⚠️ La opción esperada existe pero no está marcada como seleccionada:", expectedOption);
-        }
-      } else {
-        console.error("❌ Error al verificar plot_options:", plotError);
       }
       
       // Encontrar los datos de la opción seleccionada
@@ -246,7 +261,7 @@ const StoryOptions = () => {
       // Marcar la selección como exitosa
       setSelectionSuccessful(true);
       
-      console.log("✅ Proceso de selección completado exitosamente");
+      console.log("✅ Proceso completado exitosamente");
       
       toast({
         title: "¡Selección guardada!",
@@ -254,7 +269,7 @@ const StoryOptions = () => {
       });
       
     } catch (err: any) {
-      console.error("❌ Error al guardar la selección:", err);
+      console.error("❌ Error en el proceso de selección:", err);
       const errorMessage = err.message || "Hubo un error al guardar tu selección. Por favor intenta nuevamente.";
       setError(errorMessage);
       toast({

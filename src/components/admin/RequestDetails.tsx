@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Eye } from 'lucide-react';
@@ -33,20 +33,26 @@ const RequestDetails = ({
     fetchPlotOptions
   } = usePlotOptions();
 
-  // Memoize the fetchPlotOptions function to prevent unnecessary re-renders
-  const memoizedFetchPlotOptions = useCallback(async (requestId: string) => {
-    const options = await fetchPlotOptions(requestId);
-    setPlotOptions(options);
-  }, [fetchPlotOptions]);
-
+  // Simplified effect that only fetches when selectedRequest.id changes
   useEffect(() => {
-    // Only fetch plot options when selectedRequest changes and has an id
-    if (selectedRequest?.id) {
-      memoizedFetchPlotOptions(selectedRequest.id);
-    } else {
-      setPlotOptions([]);
-    }
-  }, [selectedRequest?.id, memoizedFetchPlotOptions]);
+    const loadPlotOptions = async () => {
+      if (selectedRequest?.id) {
+        console.log("🔄 Cargando opciones de plot para:", selectedRequest.id);
+        try {
+          const options = await fetchPlotOptions(selectedRequest.id);
+          console.log("✅ Opciones cargadas:", options);
+          setPlotOptions(options);
+        } catch (error) {
+          console.error("❌ Error cargando opciones:", error);
+          setPlotOptions([]);
+        }
+      } else {
+        setPlotOptions([]);
+      }
+    };
+
+    loadPlotOptions();
+  }, [selectedRequest?.id]); // Only depend on the ID
 
   const handleSendPlotOptions = async (options: { title: string; description: string }[]) => {
     if (!selectedRequest) return;
