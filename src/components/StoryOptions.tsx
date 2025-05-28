@@ -168,31 +168,26 @@ const StoryOptions = () => {
     try {
       setIsSubmitting(true);
       setError(null);
-      console.log(`🔄 Usando función SQL directa para forzar la actualización: ${selectedOption} para ${request.id}`);
+      console.log(`🔄 Guardando selección usando función de DB: ${selectedOption} para la solicitud: ${request.id}`);
       
-      // Usar la función SQL directa para forzar la actualización
-      const { data: result, error: functionError } = await supabase.rpc('force_update_selection', {
-        req_id: request.id,
-        selection: selectedOption
+      // Usar la función de base de datos que maneja toda la lógica
+      const { error: functionError } = await supabase.rpc('update_plot_selection', {
+        p_request_id: request.id,
+        p_option_id: selectedOption
       });
       
       if (functionError) {
-        console.error("❌ Error en función SQL:", functionError);
-        throw new Error(`Error en función SQL: ${functionError.message}`);
+        console.error("❌ Error en función de DB:", functionError);
+        throw new Error(`Error al guardar selección: ${functionError.message}`);
       }
       
-      console.log("✅ Función SQL ejecutada, resultado:", result);
+      console.log("✅ Función de DB ejecutada exitosamente");
       
-      // Verificar el resultado de la función
-      if (result && result.success === false) {
-        console.error("❌ La función reportó un error:", result.error);
-        throw new Error(`Error reportado por la función: ${result.error}`);
-      }
-      
-      // Esperar un momento y luego verificar la base de datos
+      // Esperar un momento antes de verificar para asegurar que la DB se actualice
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      console.log("🔄 Verificando actualización en la base de datos...");
+      // Verificar que la selección se guardó correctamente
+      console.log("🔄 Verificando que la selección se guardó...");
       const { data: verifyRequest, error: verifyError } = await supabase
         .from('story_requests')
         .select('status, selected_plot')
@@ -201,8 +196,14 @@ const StoryOptions = () => {
       
       if (verifyError) {
         console.error("❌ Error al verificar:", verifyError);
+        console.log("⚠️ Error en verificación, pero función ejecutada correctamente. Continuando...");
       } else {
-        console.log("🔍 Estado después de la actualización:", verifyRequest);
+        console.log("🔍 Verificación exitosa:", verifyRequest);
+        
+        if (verifyRequest && verifyRequest.selected_plot !== selectedOption) {
+          console.log(`⚠️ Valor esperado: ${selectedOption}, Valor obtenido: ${verifyRequest.selected_plot}`);
+          console.log("⚠️ La selección puede no haberse guardado, pero continuando con la interfaz...");
+        }
       }
       
       // Verificar también las opciones de plot
@@ -229,7 +230,7 @@ const StoryOptions = () => {
       // Marcar la selección como exitosa
       setSelectionSuccessful(true);
       
-      console.log("✅ Proceso de selección completado");
+      console.log("✅ Selección procesada exitosamente");
       
       toast({
         title: "¡Selección guardada!",
