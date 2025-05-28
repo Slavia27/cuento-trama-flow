@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -207,19 +206,19 @@ const RequestDetails = ({
           
           {selectedPlotOption && (
             <div className="mb-4">
-              <p className="text-sm font-medium text-green-700 mb-1">Trama Seleccionada:</p>
-              <div className="bg-white p-3 rounded border border-green-200">
-                <h5 className="font-semibold text-green-900 mb-1">{selectedPlotOption.title}</h5>
-                <p className="text-green-700 text-sm">{selectedPlotOption.description}</p>
+              <p className="text-sm font-medium text-green-700 mb-2">- Trama Seleccionada:</p>
+              <div className="bg-white p-3 rounded border border-green-200 ml-4">
+                <p className="text-green-900 font-medium mb-1">Título: "{selectedPlotOption.title}"</p>
+                <p className="text-green-700 text-sm">Descripción: "{selectedPlotOption.description}"</p>
               </div>
             </div>
           )}
           
           {selectedRequest.illustrationStyle && (
             <div>
-              <p className="text-sm font-medium text-green-700 mb-1">Estilo de Ilustración:</p>
-              <div className="bg-white p-3 rounded border border-green-200">
-                <p className="text-green-900 font-medium">{selectedRequest.illustrationStyle}</p>
+              <p className="text-sm font-medium text-green-700 mb-2">- Estilo de Ilustración Seleccionado:</p>
+              <div className="bg-white p-3 rounded border border-green-200 ml-4">
+                <p className="text-green-900 font-medium">"{selectedRequest.illustrationStyle}"</p>
               </div>
             </div>
           )}
