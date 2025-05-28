@@ -163,21 +163,18 @@ const StoryOptions = () => {
       setError(null);
       console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${request.id}`);
       
-      // Actualizar tanto usando request_id como id para asegurar compatibilidad
-      const { error: updateError } = await supabase
-        .from('story_requests')
-        .update({
-          selected_plot: selectedOption,
-          status: 'seleccion'
-        })
-        .or(`request_id.eq.${request.id},id.eq.${request.id}`);
+      // Usar la nueva función de base de datos para actualizar la selección
+      const { error: updateError } = await supabase.rpc('update_plot_selection', {
+        p_request_id: request.id,
+        p_option_id: selectedOption
+      });
       
       if (updateError) {
         console.error("Error al actualizar la base de datos:", updateError);
         throw new Error(`Error de base de datos: ${updateError.message}`);
       }
       
-      console.log("Actualización exitosa en la base de datos");
+      console.log("Actualización exitosa usando función de base de datos");
       
       // Verificar que la actualización fue exitosa
       const { data: verifyData, error: verifyError } = await supabase
@@ -214,12 +211,11 @@ const StoryOptions = () => {
       // Marcar la selección como exitosa
       setSelectionSuccessful(true);
       
-      // Trigger a manual realtime notification to ensure admin panel updates
-      console.log("Triggering manual realtime update for admin panel");
+      console.log("Selección guardada exitosamente con sincronización mejorada");
       
       toast({
         title: "¡Selección guardada!",
-        description: "Tu selección ha sido guardada exitosamente en la base de datos.",
+        description: "Tu selección ha sido guardada exitosamente y sincronizada con el panel de administración.",
       });
       
     } catch (err: any) {

@@ -14,6 +14,7 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          is_selected: boolean | null
           option_id: string
           request_id: string
           title: string
@@ -22,6 +23,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          is_selected?: boolean | null
           option_id: string
           request_id: string
           title: string
@@ -30,6 +32,7 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          is_selected?: boolean | null
           option_id?: string
           request_id?: string
           title?: string
@@ -100,7 +103,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_plot_selection: {
+        Args: { p_request_id: string; p_option_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

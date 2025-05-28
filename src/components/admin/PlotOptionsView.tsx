@@ -96,19 +96,36 @@ const PlotOptionsView = ({
         </div>
       </div>
       
+      {/* Show selection status when there's a selected plot */}
+      {selectedPlotId && status === 'seleccion' && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <p className="text-green-800 font-medium">
+              El cliente ha seleccionado una opción de trama
+            </p>
+          </div>
+          <p className="text-sm text-green-700 mt-1">
+            Opción seleccionada ID: {selectedPlotId}
+          </p>
+        </div>
+      )}
+      
       <div className="space-y-4">
         {plotOptions.map((option, index) => (
           <div 
             key={option.id} 
-            className={`p-4 border rounded-md ${
-              selectedPlotId === option.id ? 'bg-rasti-green/20 border-rasti-green' : 'bg-muted/30'
+            className={`p-4 border rounded-md transition-all ${
+              selectedPlotId === option.id 
+                ? 'bg-rasti-green/20 border-rasti-green shadow-md' 
+                : 'bg-muted/30'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <p className="font-medium">Opción {index + 1}: {option.title}</p>
               {selectedPlotId === option.id && (
-                <span className="px-2 py-1 bg-rasti-green/30 text-xs rounded-full">
-                  Seleccionada
+                <span className="px-3 py-1 bg-rasti-green text-white text-xs rounded-full font-medium">
+                  ✓ Seleccionada por el cliente
                 </span>
               )}
             </div>
