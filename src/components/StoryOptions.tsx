@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -49,47 +50,82 @@ const StoryOptions = () => {
           return;
         }
 
-        console.log("Cargando solicitud con ID:", requestId);
+        console.log("🔍 Debugging - RequestId from URL:", requestId);
 
-        // Obtener la solicitud de Supabase usando tanto request_id como id para compatibilidad
+        // PASO 1: Verificar todas las solicitudes en la base de datos
+        console.log("🔍 PASO 1: Verificando todas las solicitudes en la base de datos...");
+        const { data: allRequests, error: allError } = await supabase
+          .from('story_requests')
+          .select('*');
+        
+        console.log("🔍 Todas las solicitudes en la base de datos:", allRequests);
+        if (allError) console.error("🔍 Error al obtener todas las solicitudes:", allError);
+
+        // PASO 2: Buscar por request_id
+        console.log("🔍 PASO 2: Buscando por request_id...");
+        const { data: byRequestId, error: requestIdError } = await supabase
+          .from('story_requests')
+          .select('*')
+          .eq('request_id', requestId);
+        
+        console.log("🔍 Búsqueda por request_id:", byRequestId);
+        if (requestIdError) console.error("🔍 Error búsqueda por request_id:", requestIdError);
+
+        // PASO 3: Buscar por id (UUID)
+        console.log("🔍 PASO 3: Buscando por id (UUID)...");
+        const { data: byId, error: idError } = await supabase
+          .from('story_requests')
+          .select('*')
+          .eq('id', requestId);
+        
+        console.log("🔍 Búsqueda por id:", byId);
+        if (idError) console.error("🔍 Error búsqueda por id:", idError);
+
+        // PASO 4: Usar OR como antes pero con logs detallados
+        console.log("🔍 PASO 4: Usando búsqueda OR combinada...");
         const { data: requestData, error: requestError } = await supabase
           .from('story_requests')
           .select('*')
-          .or(`request_id.eq.${requestId},id.eq.${requestId}`)
-          .single();
+          .or(`request_id.eq.${requestId},id.eq.${requestId}`);
         
-        if (requestError || !requestData) {
-          console.error("Error al obtener la solicitud:", requestError);
-          setError("No se encontró la solicitud. Verifica el enlace e intenta nuevamente.");
+        console.log("🔍 Resultado búsqueda OR:", requestData);
+        if (requestError) console.error("🔍 Error búsqueda OR:", requestError);
+
+        if (requestError || !requestData || requestData.length === 0) {
+          console.error("❌ No se encontró la solicitud con ID:", requestId);
+          setError(`No se encontró la solicitud. ID buscado: ${requestId}. Verifica el enlace e intenta nuevamente.`);
           setLoading(false);
           return;
         }
 
-        console.log("Datos de la solicitud obtenidos:", requestData);
+        const foundRequest = requestData[0];
+        console.log("✅ Solicitud encontrada:", foundRequest);
 
         // Obtener las opciones de trama para esta solicitud usando el ID correcto
-        const actualRequestId = requestData.request_id || requestData.id;
+        const actualRequestId = foundRequest.request_id || foundRequest.id;
+        console.log("🔍 Buscando opciones para request_id:", actualRequestId);
+        
         const { data: optionsData, error: optionsError } = await supabase
           .from('plot_options')
           .select('*')
           .eq('request_id', actualRequestId);
         
         if (optionsError) {
-          console.error("Error al obtener las opciones de trama:", optionsError);
+          console.error("❌ Error al obtener las opciones de trama:", optionsError);
           setError("Error al cargar las opciones de trama. Por favor intenta nuevamente.");
           setLoading(false);
           return;
         }
 
-        console.log("Opciones de trama obtenidas:", optionsData);
+        console.log("🔍 Opciones de trama encontradas:", optionsData);
 
         // Formatear los datos para el componente
         const formattedRequest: StoryRequest = {
           id: actualRequestId,
-          name: requestData.name,
-          childName: requestData.child_name,
-          status: requestData.status as StoryStatus,
-          selectedPlot: requestData.selected_plot || undefined,
+          name: foundRequest.name,
+          childName: foundRequest.child_name,
+          status: foundRequest.status as StoryStatus,
+          selectedPlot: foundRequest.selected_plot || undefined,
           plotOptions: optionsData && optionsData.length > 0 
             ? optionsData.map(opt => ({
                 id: opt.option_id,
@@ -99,6 +135,7 @@ const StoryOptions = () => {
             : []
         };
         
+        console.log("✅ Request formateado final:", formattedRequest);
         setRequest(formattedRequest);
         
         if (formattedRequest.selectedPlot) {
@@ -116,7 +153,7 @@ const StoryOptions = () => {
         }
         
       } catch (err) {
-        console.error("Error al cargar la solicitud:", err);
+        console.error("❌ Error general al cargar la solicitud:", err);
         setError("Error al cargar la solicitud. Por favor intenta nuevamente.");
         toast({
           title: "Error",
