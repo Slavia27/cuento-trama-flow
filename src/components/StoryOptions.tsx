@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -169,35 +170,96 @@ const StoryOptions = () => {
       setError(null);
       console.log(`🔄 Guardando selección de trama: ${selectedOption} para la solicitud: ${request.id}`);
       
-      // Actualizar la solicitud con la opción seleccionada
-      const { error: updateError } = await supabase
+      // PASO 1: Actualizar la solicitud principal
+      console.log("🔄 PASO 1: Actualizando story_requests...");
+      const { data: updateData, error: updateError } = await supabase
         .from('story_requests')
         .update({ 
           selected_plot: selectedOption,
           status: 'seleccion'
         })
-        .eq('request_id', request.id);
+        .eq('request_id', request.id)
+        .select();
       
       if (updateError) {
         console.error("❌ Error al actualizar la solicitud:", updateError);
-        throw new Error(`Error de base de datos: ${updateError.message}`);
+        throw new Error(`Error al actualizar solicitud: ${updateError.message}`);
       }
       
-      console.log("✅ Solicitud actualizada exitosamente");
+      console.log("✅ Solicitud actualizada exitosamente:", updateData);
       
-      // Actualizar las opciones de trama para marcar la seleccionada
-      await supabase
+      // PASO 2: Desmarcar todas las opciones anteriores
+      console.log("🔄 PASO 2: Desmarcando todas las opciones...");
+      const { error: unmarkError } = await supabase
         .from('plot_options')
         .update({ is_selected: false })
         .eq('request_id', request.id);
       
-      await supabase
+      if (unmarkError) {
+        console.error("❌ Error al desmarcar opciones:", unmarkError);
+        throw new Error(`Error al desmarcar opciones: ${unmarkError.message}`);
+      }
+      
+      console.log("✅ Opciones desmarcadas exitosamente");
+      
+      // PASO 3: Marcar la opción seleccionada
+      console.log("🔄 PASO 3: Marcando opción seleccionada...");
+      const { data: markData, error: markError } = await supabase
         .from('plot_options')
         .update({ is_selected: true })
         .eq('option_id', selectedOption)
-        .eq('request_id', request.id);
+        .eq('request_id', request.id)
+        .select();
       
-      console.log("✅ Opciones de trama actualizadas");
+      if (markError) {
+        console.error("❌ Error al marcar opción seleccionada:", markError);
+        throw new Error(`Error al marcar opción: ${markError.message}`);
+      }
+      
+      console.log("✅ Opción marcada exitosamente:", markData);
+      
+      // PASO 4: Verificar que la actualización fue exitosa
+      console.log("🔄 PASO 4: Verificando actualización...");
+      const { data: verifyRequest, error: verifyRequestError } = await supabase
+        .from('story_requests')
+        .select('status, selected_plot')
+        .eq('request_id', request.id)
+        .single();
+      
+      if (verifyRequestError) {
+        console.error("❌ Error al verificar solicitud:", verifyRequestError);
+        throw new Error(`Error al verificar solicitud: ${verifyRequestError.message}`);
+      }
+      
+      const { data: verifyOptions, error: verifyOptionsError } = await supabase
+        .from('plot_options')
+        .select('option_id, is_selected')
+        .eq('request_id', request.id)
+        .eq('is_selected', true);
+      
+      if (verifyOptionsError) {
+        console.error("❌ Error al verificar opciones:", verifyOptionsError);
+        throw new Error(`Error al verificar opciones: ${verifyOptionsError.message}`);
+      }
+      
+      console.log("🔍 Verificación - Solicitud:", verifyRequest);
+      console.log("🔍 Verificación - Opciones marcadas:", verifyOptions);
+      
+      // Verificar que todo se guardó correctamente
+      if (verifyRequest.selected_plot !== selectedOption) {
+        throw new Error(`La selección no se guardó en story_requests. Esperado: ${selectedOption}, Obtenido: ${verifyRequest.selected_plot}`);
+      }
+      
+      if (!verifyOptions || verifyOptions.length === 0) {
+        throw new Error("No se encontró ninguna opción marcada como seleccionada");
+      }
+      
+      const selectedOptionInDB = verifyOptions.find(opt => opt.option_id === selectedOption);
+      if (!selectedOptionInDB) {
+        throw new Error(`La opción ${selectedOption} no está marcada como seleccionada en la base de datos`);
+      }
+      
+      console.log("✅ Verificación exitosa - Todo se guardó correctamente");
       
       // Encontrar los datos de la opción seleccionada
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
