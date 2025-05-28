@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -23,7 +24,42 @@ type StoryRequest = {
   status: StoryStatus;
   plotOptions?: StoryOption[];
   selectedPlot?: string;
+  illustrationStyle?: string;
 };
+
+type IllustrationStyle = {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+};
+
+const illustrationStyles: IllustrationStyle[] = [
+  {
+    id: 'acuarela',
+    name: 'Acuarela Suave',
+    description: 'Colores suaves y difuminados',
+    imageUrl: '/placeholder.svg'
+  },
+  {
+    id: 'vectorial',
+    name: 'Vectorial Limpio',
+    description: 'Líneas definidas y colores vibrantes',
+    imageUrl: '/placeholder.svg'
+  },
+  {
+    id: 'boceto',
+    name: 'Boceto a Lápiz',
+    description: 'Trazos artísticos a lápiz',
+    imageUrl: '/placeholder.svg'
+  },
+  {
+    id: 'cartoon',
+    name: 'Cartoon Infantil',
+    description: 'Estilo divertido y colorido',
+    imageUrl: '/placeholder.svg'
+  }
+];
 
 const StoryOptions = () => {
   const { requestId } = useParams();
@@ -31,11 +67,13 @@ const StoryOptions = () => {
   const { toast } = useToast();
   const [request, setRequest] = useState<StoryRequest | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>('');
+  const [selectedIllustrationStyle, setSelectedIllustrationStyle] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectionSuccessful, setSelectionSuccessful] = useState(false);
   const [selectedOptionData, setSelectedOptionData] = useState<StoryOption | null>(null);
+  const [selectedStyleData, setSelectedStyleData] = useState<IllustrationStyle | null>(null);
   
   // Cargar solicitud y opciones desde Supabase
   useEffect(() => {
@@ -95,6 +133,7 @@ const StoryOptions = () => {
           childName: foundRequest.child_name,
           status: foundRequest.status as StoryStatus,
           selectedPlot: foundRequest.selected_plot || undefined,
+          illustrationStyle: foundRequest.illustration_style || undefined,
           plotOptions: optionsData && optionsData.length > 0 
             ? optionsData.map(opt => ({
                 id: opt.option_id,
@@ -114,6 +153,16 @@ const StoryOptions = () => {
           const selected = formattedRequest.plotOptions?.find(opt => opt.id === formattedRequest.selectedPlot);
           if (selected) {
             setSelectedOptionData(selected);
+          }
+        }
+
+        if (formattedRequest.illustrationStyle) {
+          setSelectedIllustrationStyle(formattedRequest.illustrationStyle);
+          
+          // Si ya hay un estilo seleccionado, buscar los datos
+          const selectedStyle = illustrationStyles.find(style => style.id === formattedRequest.illustrationStyle);
+          if (selectedStyle) {
+            setSelectedStyleData(selectedStyle);
           }
         }
         
@@ -142,13 +191,29 @@ const StoryOptions = () => {
     setSelectedOption(optionId);
     setError(null);
   };
+
+  const handleIllustrationStyleSelect = (styleId: string) => {
+    console.log("Estilo de ilustración seleccionado:", styleId);
+    setSelectedIllustrationStyle(styleId);
+    setError(null);
+  };
   
   const handleConfirmSelection = async () => {
     if (!selectedOption) {
-      setError("Por favor selecciona una opción antes de continuar.");
+      setError("Por favor selecciona una opción de trama antes de continuar.");
       toast({
         title: "Error",
-        description: "Por favor selecciona una opción antes de continuar.",
+        description: "Por favor selecciona una opción de trama antes de continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedIllustrationStyle) {
+      setError("Por favor selecciona un estilo de ilustración antes de continuar.");
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un estilo de ilustración antes de continuar.",
         variant: "destructive",
       });
       return;
@@ -167,13 +232,14 @@ const StoryOptions = () => {
     try {
       setIsSubmitting(true);
       setError(null);
-      console.log(`🔄 Intentando guardar selección: ${selectedOption} para la solicitud: ${request.id}`);
+      console.log(`🔄 Intentando guardar selección: ${selectedOption}, estilo: ${selectedIllustrationStyle} para la solicitud: ${request.id}`);
       
       // Método 1: Usar la función RPC actualizada
       console.log("📞 Usando función RPC update_plot_selection...");
       const { error: rpcError } = await supabase.rpc('update_plot_selection', {
         p_request_id: request.id,
-        p_option_id: selectedOption
+        p_option_id: selectedOption,
+        p_illustration_style: selectedIllustrationStyle
       });
       
       if (rpcError) {
@@ -187,6 +253,7 @@ const StoryOptions = () => {
           .from('story_requests')
           .update({ 
             selected_plot: selectedOption,
+            illustration_style: selectedIllustrationStyle,
             status: 'seleccion'
           })
           .eq('request_id', request.id);
@@ -224,38 +291,18 @@ const StoryOptions = () => {
       // Esperar un momento para que se propague la actualización
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Verificar que todo se actualizó correctamente
-      console.log("🔄 Verificando actualizaciones...");
-      
-      const { data: updatedRequest, error: verifyError } = await supabase
-        .from('story_requests')
-        .select('status, selected_plot')
-        .eq('request_id', request.id)
-        .single();
-      
-      if (verifyError) {
-        console.error("❌ Error en verificación:", verifyError);
-      } else {
-        console.log("✅ Estado actualizado:", updatedRequest);
-        
-        if (updatedRequest.selected_plot === selectedOption && updatedRequest.status === 'seleccion') {
-          console.log("✅ Verificación exitosa - Todo actualizado correctamente");
-        } else {
-          console.log("⚠️ Posible inconsistencia detectada");
-          console.log(`Expected plot: ${selectedOption}, Got: ${updatedRequest.selected_plot}`);
-          console.log(`Expected status: seleccion, Got: ${updatedRequest.status}`);
-        }
-      }
-      
-      // Encontrar los datos de la opción seleccionada
+      // Encontrar los datos de la opción y estilo seleccionados
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
+      const styleData = illustrationStyles.find(style => style.id === selectedIllustrationStyle);
       setSelectedOptionData(optionData || null);
+      setSelectedStyleData(styleData || null);
       
       // Actualizar el estado local
       setRequest({
         ...request,
         status: 'seleccion',
-        selectedPlot: selectedOption
+        selectedPlot: selectedOption,
+        illustrationStyle: selectedIllustrationStyle
       });
       
       // Marcar la selección como exitosa
@@ -287,7 +334,9 @@ const StoryOptions = () => {
       state: { 
         requestId: request?.id,
         optionId: selectedOption,
-        optionTitle: selectedOptionData?.title
+        optionTitle: selectedOptionData?.title,
+        illustrationStyle: selectedIllustrationStyle,
+        illustrationStyleName: selectedStyleData?.name
       } 
     });
   };
@@ -350,11 +399,14 @@ const StoryOptions = () => {
           <Button 
             onClick={() => {
               const selectedOptionData = request.plotOptions?.find(opt => opt.id === request.selectedPlot);
+              const selectedStyleData = illustrationStyles.find(style => style.id === request.illustrationStyle);
               navigate('/pagar', { 
                 state: { 
                   requestId: request.id,
                   optionId: request.selectedPlot,
-                  optionTitle: selectedOptionData?.title
+                  optionTitle: selectedOptionData?.title,
+                  illustrationStyle: request.illustrationStyle,
+                  illustrationStyleName: selectedStyleData?.name
                 } 
               });
             }} 
@@ -375,10 +427,15 @@ const StoryOptions = () => {
           <div className="flex justify-center mb-4">
             <CheckCircle className="h-16 w-16 text-green-500" />
           </div>
-          <h2 className="text-2xl font-bold mb-4">¡Trama seleccionada correctamente!</h2>
-          <p className="mb-6">
-            Has seleccionado exitosamente la opción: <span className="font-medium">{selectedOptionData?.title}</span>
-          </p>
+          <h2 className="text-2xl font-bold mb-4">¡Selecciones guardadas correctamente!</h2>
+          <div className="mb-6 space-y-2">
+            <p>
+              <span className="font-medium">Trama seleccionada:</span> {selectedOptionData?.title}
+            </p>
+            <p>
+              <span className="font-medium">Estilo de ilustración:</span> {selectedStyleData?.name}
+            </p>
+          </div>
           <p className="mb-8 text-muted-foreground">
             Ahora puedes continuar al proceso de pago para finalizar tu pedido.
           </p>
@@ -397,10 +454,10 @@ const StoryOptions = () => {
   return (
     <div className="container py-12 max-w-4xl">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-3">Opciones de Trama</h1>
+        <h1 className="text-3xl font-bold mb-3">Opciones de Trama y Estilo</h1>
         <p className="text-muted-foreground">
           Hola {request?.name}, estas son las opciones que hemos creado especialmente para {request?.childName}.
-          Por favor, selecciona la que más te guste.
+          Por favor, selecciona la trama y el estilo de ilustración que más te gusten.
         </p>
       </div>
       
@@ -411,41 +468,86 @@ const StoryOptions = () => {
         </Alert>
       )}
       
-      <RadioGroup 
-        value={selectedOption} 
-        onValueChange={handleOptionSelect}
-        className="space-y-6 mb-8"
-      >
-        {request?.plotOptions?.map((option) => (
-          <Card
-            key={option.id}
-            className={`p-6 cursor-pointer transition-all duration-300 ${
-              selectedOption === option.id
-                ? 'border-rasti-blue border-2 shadow-md'
-                : 'hover:border-rasti-blue/50 hover:shadow-md'
-            }`}
-          >
-            <div className="flex items-start gap-4">
-              <RadioGroupItem 
-                value={option.id} 
-                id={option.id}
-                className="mt-1"
-              />
-              
-              <div>
-                <h3 className="text-xl font-bold mb-2">{option.title}</h3>
-                <p className="text-muted-foreground">{option.description}</p>
+      {/* Opciones de Trama */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4 text-rasti-blue">Opciones de Trama</h2>
+        <RadioGroup 
+          value={selectedOption} 
+          onValueChange={handleOptionSelect}
+          className="space-y-6 mb-8"
+        >
+          {request?.plotOptions?.map((option) => (
+            <Card
+              key={option.id}
+              className={`p-6 cursor-pointer transition-all duration-300 ${
+                selectedOption === option.id
+                  ? 'border-rasti-blue border-2 shadow-md'
+                  : 'hover:border-rasti-blue/50 hover:shadow-md'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <RadioGroupItem 
+                  value={option.id} 
+                  id={option.id}
+                  className="mt-1"
+                />
+                
+                <div>
+                  <h3 className="text-xl font-bold mb-2">{option.title}</h3>
+                  <p className="text-muted-foreground">{option.description}</p>
+                </div>
               </div>
-            </div>
-          </Card>
-        ))}
-      </RadioGroup>
+            </Card>
+          ))}
+        </RadioGroup>
+      </div>
+
+      {/* Estilos de Ilustración */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4 text-rasti-blue">Elige tu estilo de ilustración preferido</h2>
+        <RadioGroup 
+          value={selectedIllustrationStyle} 
+          onValueChange={handleIllustrationStyleSelect}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          {illustrationStyles.map((style) => (
+            <Card
+              key={style.id}
+              className={`p-4 cursor-pointer transition-all duration-300 ${
+                selectedIllustrationStyle === style.id
+                  ? 'border-rasti-blue border-2 shadow-md'
+                  : 'hover:border-rasti-blue/50 hover:shadow-md'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <RadioGroupItem 
+                  value={style.id} 
+                  id={style.id}
+                  className="mt-1"
+                />
+                
+                <div className="flex-grow">
+                  <div className="text-center mb-3">
+                    <img 
+                      src={style.imageUrl} 
+                      alt={style.name}
+                      className="w-32 h-32 object-cover rounded-lg mx-auto mb-2"
+                    />
+                  </div>
+                  <h3 className="text-lg font-bold mb-1">{style.name}</h3>
+                  <p className="text-sm text-muted-foreground">{style.description}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </RadioGroup>
+      </div>
       
       <div className="flex justify-center">
         <Button
           className="bg-rasti-blue hover:bg-rasti-blue/80 text-white px-8"
           onClick={handleConfirmSelection}
-          disabled={!selectedOption || isSubmitting}
+          disabled={!selectedOption || !selectedIllustrationStyle || isSubmitting}
         >
           {isSubmitting ? (
             <>
@@ -453,7 +555,7 @@ const StoryOptions = () => {
               Guardando...
             </>
           ) : (
-            'Confirmar Selección'
+            'Confirmar Selecciones'
           )}
         </Button>
       </div>

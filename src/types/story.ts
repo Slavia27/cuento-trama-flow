@@ -51,6 +51,7 @@ export type StoryRequest = {
   createdAt: string;
   plotOptions?: PlotOption[];
   selectedPlot?: string;
+  illustrationStyle?: string;
   productionDays?: number;
   formData?: FormData | Json;
 };

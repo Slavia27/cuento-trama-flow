@@ -56,6 +56,7 @@ export type Database = {
           email: string
           form_data: Json | null
           id: string
+          illustration_style: string | null
           name: string
           production_days: number | null
           request_id: string
@@ -72,6 +73,7 @@ export type Database = {
           email: string
           form_data?: Json | null
           id?: string
+          illustration_style?: string | null
           name: string
           production_days?: number | null
           request_id: string
@@ -88,6 +90,7 @@ export type Database = {
           email?: string
           form_data?: Json | null
           id?: string
+          illustration_style?: string | null
           name?: string
           production_days?: number | null
           request_id?: string
@@ -104,7 +107,13 @@ export type Database = {
     }
     Functions: {
       update_plot_selection: {
-        Args: { p_request_id: string; p_option_id: string }
+        Args:
+          | { p_request_id: string; p_option_id: string }
+          | {
+              p_request_id: string
+              p_option_id: string
+              p_illustration_style?: string
+            }
         Returns: undefined
       }
     }
