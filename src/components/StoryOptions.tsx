@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -167,26 +168,31 @@ const StoryOptions = () => {
     try {
       setIsSubmitting(true);
       setError(null);
-      console.log(`🔄 Guardando selección usando función de DB: ${selectedOption} para la solicitud: ${request.id}`);
+      console.log(`🔄 Usando función SQL directa para forzar la actualización: ${selectedOption} para ${request.id}`);
       
-      // Usar la función de base de datos que maneja toda la lógica
-      const { error: functionError } = await supabase.rpc('update_plot_selection', {
-        p_request_id: request.id,
-        p_option_id: selectedOption
+      // Usar la función SQL directa para forzar la actualización
+      const { data: result, error: functionError } = await supabase.rpc('force_update_selection', {
+        req_id: request.id,
+        selection: selectedOption
       });
       
       if (functionError) {
-        console.error("❌ Error en función de DB:", functionError);
-        throw new Error(`Error al guardar selección: ${functionError.message}`);
+        console.error("❌ Error en función SQL:", functionError);
+        throw new Error(`Error en función SQL: ${functionError.message}`);
       }
       
-      console.log("✅ Función de DB ejecutada exitosamente");
+      console.log("✅ Función SQL ejecutada, resultado:", result);
       
-      // Esperar un momento antes de verificar para asegurar que la DB se actualice
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verificar el resultado de la función
+      if (result && result.success === false) {
+        console.error("❌ La función reportó un error:", result.error);
+        throw new Error(`Error reportado por la función: ${result.error}`);
+      }
       
-      // Verificar que la selección se guardó correctamente usando el mismo ID
-      console.log("🔄 Verificando que la selección se guardó...");
+      // Esperar un momento y luego verificar la base de datos
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      console.log("🔄 Verificando actualización en la base de datos...");
       const { data: verifyRequest, error: verifyError } = await supabase
         .from('story_requests')
         .select('status, selected_plot')
@@ -195,23 +201,25 @@ const StoryOptions = () => {
       
       if (verifyError) {
         console.error("❌ Error al verificar:", verifyError);
-        // Si hay error en la verificación, pero la función se ejecutó bien, continuar
-        console.log("⚠️ Error en verificación, pero función ejecutada correctamente. Continuando...");
       } else {
-        console.log("🔍 Verificación exitosa:", verifyRequest);
-        
-        // Si la verificación fue exitosa, revisar si el valor se guardó
-        if (verifyRequest && verifyRequest.selected_plot !== selectedOption) {
-          console.log(`⚠️ Valor esperado: ${selectedOption}, Valor obtenido: ${verifyRequest.selected_plot}`);
-          console.log("⚠️ La selección puede no haberse guardado, pero continuando con la interfaz...");
-        }
+        console.log("🔍 Estado después de la actualización:", verifyRequest);
+      }
+      
+      // Verificar también las opciones de plot
+      const { data: plotOptions, error: plotError } = await supabase
+        .from('plot_options')
+        .select('option_id, is_selected')
+        .eq('request_id', request.id);
+      
+      if (!plotError) {
+        console.log("🔍 Estado de opciones de plot:", plotOptions);
       }
       
       // Encontrar los datos de la opción seleccionada
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
       setSelectedOptionData(optionData || null);
       
-      // Actualizar el estado local independientemente de la verificación
+      // Actualizar el estado local
       setRequest({
         ...request,
         status: 'seleccion',
@@ -221,7 +229,7 @@ const StoryOptions = () => {
       // Marcar la selección como exitosa
       setSelectionSuccessful(true);
       
-      console.log("✅ Selección procesada exitosamente");
+      console.log("✅ Proceso de selección completado");
       
       toast({
         title: "¡Selección guardada!",
