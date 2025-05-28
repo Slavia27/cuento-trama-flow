@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -50,65 +49,35 @@ const StoryOptions = () => {
           return;
         }
 
-        console.log("🔍 Debugging - RequestId from URL:", requestId);
+        console.log("🔍 Buscando solicitud con ID:", requestId);
 
-        // PASO 1: Verificar todas las solicitudes en la base de datos
-        console.log("🔍 PASO 1: Verificando todas las solicitudes en la base de datos...");
-        const { data: allRequests, error: allError } = await supabase
-          .from('story_requests')
-          .select('*');
-        
-        console.log("🔍 Todas las solicitudes en la base de datos:", allRequests);
-        if (allError) console.error("🔍 Error al obtener todas las solicitudes:", allError);
-
-        // PASO 2: Buscar por request_id
-        console.log("🔍 PASO 2: Buscando por request_id...");
-        const { data: byRequestId, error: requestIdError } = await supabase
-          .from('story_requests')
-          .select('*')
-          .eq('request_id', requestId);
-        
-        console.log("🔍 Búsqueda por request_id:", byRequestId);
-        if (requestIdError) console.error("🔍 Error búsqueda por request_id:", requestIdError);
-
-        // PASO 3: Buscar por id (UUID)
-        console.log("🔍 PASO 3: Buscando por id (UUID)...");
-        const { data: byId, error: idError } = await supabase
-          .from('story_requests')
-          .select('*')
-          .eq('id', requestId);
-        
-        console.log("🔍 Búsqueda por id:", byId);
-        if (idError) console.error("🔍 Error búsqueda por id:", idError);
-
-        // PASO 4: Usar OR como antes pero con logs detallados
-        console.log("🔍 PASO 4: Usando búsqueda OR combinada...");
+        // Buscar directamente por request_id (que es el campo que usamos en los enlaces)
         const { data: requestData, error: requestError } = await supabase
           .from('story_requests')
           .select('*')
-          .or(`request_id.eq.${requestId},id.eq.${requestId}`);
+          .eq('request_id', requestId)
+          .single();
         
-        console.log("🔍 Resultado búsqueda OR:", requestData);
-        if (requestError) console.error("🔍 Error búsqueda OR:", requestError);
+        console.log("🔍 Resultado de búsqueda:", requestData);
+        if (requestError) console.error("🔍 Error en búsqueda:", requestError);
 
-        if (requestError || !requestData || requestData.length === 0) {
-          console.error("❌ No se encontró la solicitud con ID:", requestId);
+        if (requestError || !requestData) {
+          console.error("❌ No se encontró la solicitud con request_id:", requestId);
           setError(`No se encontró la solicitud. ID buscado: ${requestId}. Verifica el enlace e intenta nuevamente.`);
           setLoading(false);
           return;
         }
 
-        const foundRequest = requestData[0];
+        const foundRequest = requestData;
         console.log("✅ Solicitud encontrada:", foundRequest);
 
-        // Obtener las opciones de trama para esta solicitud usando el ID correcto
-        const actualRequestId = foundRequest.request_id || foundRequest.id;
-        console.log("🔍 Buscando opciones para request_id:", actualRequestId);
+        // Obtener las opciones de trama para esta solicitud
+        console.log("🔍 Buscando opciones para request_id:", foundRequest.request_id);
         
         const { data: optionsData, error: optionsError } = await supabase
           .from('plot_options')
           .select('*')
-          .eq('request_id', actualRequestId);
+          .eq('request_id', foundRequest.request_id);
         
         if (optionsError) {
           console.error("❌ Error al obtener las opciones de trama:", optionsError);
@@ -121,7 +90,7 @@ const StoryOptions = () => {
 
         // Formatear los datos para el componente
         const formattedRequest: StoryRequest = {
-          id: actualRequestId,
+          id: foundRequest.request_id,
           name: foundRequest.name,
           childName: foundRequest.child_name,
           status: foundRequest.status as StoryStatus,
@@ -216,8 +185,8 @@ const StoryOptions = () => {
       // Verificar que la actualización fue exitosa
       const { data: verifyData, error: verifyError } = await supabase
         .from('story_requests')
-        .select('status, selected_plot, request_id, id')
-        .or(`request_id.eq.${request.id},id.eq.${request.id}`)
+        .select('status, selected_plot, request_id')
+        .eq('request_id', request.id)
         .single();
       
       if (verifyError) {
