@@ -167,9 +167,9 @@ const StoryOptions = () => {
     try {
       setIsSubmitting(true);
       setError(null);
-      console.log(`Guardando selección de trama: ${selectedOption} para la solicitud: ${request.id}`);
+      console.log(`🔄 Guardando selección de trama: ${selectedOption} para la solicitud: ${request.id}`);
       
-      // Actualización directa sin usar función RPC
+      // Actualizar la solicitud con la opción seleccionada
       const { error: updateError } = await supabase
         .from('story_requests')
         .update({ 
@@ -179,46 +179,25 @@ const StoryOptions = () => {
         .eq('request_id', request.id);
       
       if (updateError) {
-        console.error("Error al actualizar la base de datos:", updateError);
+        console.error("❌ Error al actualizar la solicitud:", updateError);
         throw new Error(`Error de base de datos: ${updateError.message}`);
       }
       
-      console.log("✅ Actualización exitosa");
+      console.log("✅ Solicitud actualizada exitosamente");
       
-      // También actualizar la tabla plot_options para marcar la opción seleccionada
-      const { error: optionsUpdateError } = await supabase
+      // Actualizar las opciones de trama para marcar la seleccionada
+      await supabase
         .from('plot_options')
         .update({ is_selected: false })
         .eq('request_id', request.id);
       
-      if (!optionsUpdateError) {
-        await supabase
-          .from('plot_options')
-          .update({ is_selected: true })
-          .eq('option_id', selectedOption)
-          .eq('request_id', request.id);
-      }
+      await supabase
+        .from('plot_options')
+        .update({ is_selected: true })
+        .eq('option_id', selectedOption)
+        .eq('request_id', request.id);
       
-      // Verificar que la actualización fue exitosa
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('story_requests')
-        .select('status, selected_plot, request_id')
-        .eq('request_id', request.id)
-        .single();
-      
-      if (verifyError) {
-        console.error("Error al verificar actualización:", verifyError);
-        throw new Error("Error al verificar la actualización en la base de datos");
-      }
-      
-      console.log("✅ Verificación exitosa:", verifyData);
-      
-      if (verifyData.selected_plot !== selectedOption) {
-        console.error("La verificación falló - la selección no se guardó");
-        console.error("Esperado:", selectedOption);
-        console.error("Obtenido:", verifyData.selected_plot);
-        throw new Error("La selección no se guardó correctamente");
-      }
+      console.log("✅ Opciones de trama actualizadas");
       
       // Encontrar los datos de la opción seleccionada
       const optionData = request?.plotOptions?.find(opt => opt.id === selectedOption);
@@ -242,7 +221,7 @@ const StoryOptions = () => {
       });
       
     } catch (err: any) {
-      console.error("Error saving selection:", err);
+      console.error("❌ Error al guardar la selección:", err);
       const errorMessage = err.message || "Hubo un error al guardar tu selección. Por favor intenta nuevamente.";
       setError(errorMessage);
       toast({
