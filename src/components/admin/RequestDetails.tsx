@@ -122,6 +122,13 @@ const RequestDetails = ({
   // Find the selected plot option
   const selectedPlotOption = plotOptions.find(option => option.id === selectedRequest?.selectedPlot);
 
+  // Add debugging for illustration style
+  console.log("🔍 Debugging illustration style:", {
+    selectedRequest: selectedRequest?.id,
+    illustrationStyle: selectedRequest?.illustrationStyle,
+    hasSelectedPlot: !!selectedPlotOption
+  });
+
   if (!selectedRequest) {
     return (
       <div className="h-full flex items-center justify-center flex-col">
@@ -220,6 +227,12 @@ const RequestDetails = ({
               <div className="bg-white p-3 rounded border border-green-200 ml-4">
                 <p className="text-green-900 font-medium">"{selectedRequest.illustrationStyle}"</p>
               </div>
+            </div>
+          )}
+
+          {!selectedPlotOption && !selectedRequest.illustrationStyle && (
+            <div className="bg-white p-3 rounded border border-green-200">
+              <p className="text-green-700 text-sm italic">Aún no se han realizado selecciones</p>
             </div>
           )}
         </div>

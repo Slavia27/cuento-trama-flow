@@ -33,12 +33,12 @@ const RequestList = ({ requests, selectedRequest, onSelectRequest, onDeleteReque
       <h3 className="text-xl font-bold mb-4">Solicitudes</h3>
       
       <Tabs defaultValue="pendiente" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 h-auto gap-1 mb-4 bg-muted p-1">
+        <TabsList className="flex flex-wrap w-full h-auto gap-1 mb-4 bg-muted p-1">
           {statusTabs.map(status => (
             <TabsTrigger 
               key={status} 
               value={status} 
-              className="text-xs px-2 py-2 whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+              className="flex-1 min-w-0 text-xs px-2 py-2 whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
               {getStatusLabel(status)}
             </TabsTrigger>
