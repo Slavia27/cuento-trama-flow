@@ -212,18 +212,18 @@ const RequestDetails = ({
           <h4 className="text-lg font-semibold text-green-800 mb-3">Selecciones del Cliente</h4>
           
           {selectedPlotOption && (
-            <div className="mb-4">
-              <p className="text-sm font-medium text-green-700 mb-2">- Trama Seleccionada:</p>
+            <div className="mb-3">
+              <p className="text-sm font-medium text-green-700 mb-2">Trama Seleccionada:</p>
               <div className="bg-white p-3 rounded border border-green-200 ml-4">
-                <p className="text-green-900 font-medium mb-1">Título: "{selectedPlotOption.title}"</p>
-                <p className="text-green-700 text-sm">Descripción: "{selectedPlotOption.description}"</p>
+                <p className="text-green-900 font-medium mb-1">"{selectedPlotOption.title}"</p>
+                <p className="text-green-700 text-sm">"{selectedPlotOption.description}"</p>
               </div>
             </div>
           )}
           
           {selectedRequest.illustrationStyle && (
-            <div>
-              <p className="text-sm font-medium text-green-700 mb-2">- Estilo de Ilustración Seleccionado:</p>
+            <div className="mb-3">
+              <p className="text-sm font-medium text-green-700 mb-2">Estilo de Ilustración Seleccionado:</p>
               <div className="bg-white p-3 rounded border border-green-200 ml-4">
                 <p className="text-green-900 font-medium">"{selectedRequest.illustrationStyle}"</p>
               </div>
