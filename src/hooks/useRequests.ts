@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -88,8 +87,8 @@ export const useRequests = () => {
             
             // Update the specific request in the state immediately using both possible ID fields
             setRequests(prev => {
+              const recordId = updatedRecord.request_id || updatedRecord.id;
               const updatedRequests = prev.map(req => {
-                const recordId = updatedRecord.request_id || updatedRecord.id;
                 if (req.id === recordId) {
                   const updatedRequest = {
                     ...req,
@@ -160,17 +159,35 @@ export const useRequests = () => {
 
   const deleteRequest = async (id: string) => {
     try {
-      // Try to delete using both possible ID fields
+      console.log("Attempting to delete request with ID:", id);
+      
+      // First try to find the request in our local state to get the proper database ID
+      const requestToDelete = requests.find(req => req.id === id);
+      if (!requestToDelete) {
+        console.error("Request not found in local state:", id);
+        toast({
+          title: "Error",
+          description: "No se encontró la solicitud a eliminar",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Delete from Supabase using both possible ID columns for maximum compatibility
       const { error } = await supabase
         .from('story_requests')
         .delete()
         .or(`request_id.eq.${id},id.eq.${id}`);
         
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase delete error:", error);
+        throw error;
+      }
       
-      // Update local state
-      const updatedRequests = requests.filter(req => req.id !== id);
-      setRequests(updatedRequests);
+      console.log("Successfully deleted from Supabase, updating local state");
+      
+      // Update local state immediately
+      setRequests(prev => prev.filter(req => req.id !== id));
       
       toast({
         title: "Solicitud eliminada",
