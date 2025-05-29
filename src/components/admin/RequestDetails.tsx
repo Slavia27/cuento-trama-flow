@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -217,11 +218,18 @@ const RequestDetails = ({
               <div className="bg-white p-3 rounded border border-green-200 ml-4">
                 <p className="text-green-900 font-medium mb-1">"{selectedPlotOption.title}"</p>
                 <p className="text-green-700 text-sm">"{selectedPlotOption.description}"</p>
+                
+                {selectedRequest?.illustrationStyle && (
+                  <div className="mt-2">
+                    <p className="text-sm font-semibold text-green-900">Estilo de Ilustración Seleccionado:</p>
+                    <p className="text-sm text-green-800">{selectedRequest.illustrationStyle}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
           
-          {selectedRequest.illustrationStyle && (
+          {!selectedPlotOption && selectedRequest.illustrationStyle && (
             <div className="mb-3">
               <p className="text-sm font-medium text-green-700 mb-2">Estilo de Ilustración Seleccionado:</p>
               <div className="bg-white p-3 rounded border border-green-200 ml-4">

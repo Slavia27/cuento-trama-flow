@@ -21,10 +21,15 @@ const AdminDashboard = () => {
     setSelectedRequest(request);
   };
   
-  const handleDeleteRequest = (id: string) => {
-    const success = deleteRequest(id);
-    if (success && selectedRequest?.id === id) {
-      setSelectedRequest(null);
+  const handleDeleteRequest = async (id: string) => {
+    const success = await deleteRequest(id);
+    if (success) {
+      if (selectedRequest?.id === id) {
+        setSelectedRequest(null);
+      }
+      loadRequests(); // Refresh requests after deletion
+    } else {
+      console.error("❌ No se pudo eliminar la solicitud");
     }
   };
   
